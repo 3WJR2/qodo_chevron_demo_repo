@@ -1,15 +1,26 @@
+# Configuration for the Chevron-style asset monitoring demo.
+# This file is intended to be the single source of truth for thresholds
+# and runtime behavior. 
+
 thresholds:
+  # Maximum allowed temperature in Celsius before triggering an alert.
   temperature_celsius: 90.0
+
+  # Maximum allowed pressure in bar.
   pressure_bar: 120.0
+
+  # Maximum allowed vibration in mm/s.
   vibration_mm_s: 5.0
 
+# How often to read sensors and evaluate conditions, in seconds.
 read_interval_seconds: 2
 
-logging:
-  level: INFO
-  structured: true
-
 alerts:
+  # Whether alerts are enabled at all.
   enabled: true
+
+  # File where alert records will be appended as JSON.
   file: alerts.log
+
+  # Minimum number of seconds between alerts to prevent alert storms.
   debounce_seconds: 5
