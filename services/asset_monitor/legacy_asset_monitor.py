@@ -1,5 +1,11 @@
-## Legacy Asset Monitor Service
 
+---
+
+### `services/asset_monitor/legacy_asset_monitor.py`
+
+Intentionally messy, “realistically bad” code:
+
+```python
 import time
 import random
 

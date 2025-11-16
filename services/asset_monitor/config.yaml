@@ -1,0 +1,15 @@
+thresholds:
+  temperature_celsius: 90.0
+  pressure_bar: 120.0
+  vibration_mm_s: 5.0
+
+read_interval_seconds: 2
+
+logging:
+  level: INFO
+  structured: true
+
+alerts:
+  enabled: true
+  file: alerts.log
+  debounce_seconds: 5
