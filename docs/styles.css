@@ -69,6 +69,11 @@ button.ghost {
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+button.warning {
+  border-color: rgba(248, 250, 109, 0.6);
+  color: #fef08a;
+}
+
 button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -108,6 +113,10 @@ button:disabled {
 .metric .value {
   font-size: 1.8rem;
   font-variant-numeric: tabular-nums;
+}
+
+.metric.highlight .value {
+  color: var(--accent);
 }
 
 .status {
