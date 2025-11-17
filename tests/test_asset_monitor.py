@@ -1,7 +1,6 @@
 import json
 import time
 from pathlib import Path
-
 import pytest
 import yaml
 
@@ -69,24 +68,34 @@ def test_thresholds_loaded_from_config(tmp_path: Path) -> None:
     assert config.alerts_file.name == "alerts.log"
     assert config.alerts_enabled is True
 
-
+@pytest.mark.parametrize(
+    "metric, value",
+    [
+        ("temperature_celsius", 100.0),
+        ("pressure_bar", 130.0),
+        ("vibration_mm_s", 6.0),
+    ],
+)
 def test_evaluate_once_triggers_alert_when_over_threshold(
+    metric: str,
+    value: float,
     monitor_config: MonitorConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def fake_read_sensor_data() -> AssetReading:
-        return AssetReading(
-            temperature_celsius=100.0,
-            pressure_bar=130.0,
-            vibration_mm_s=6.0,
-        )
+        reading_values = {
+            "temperature_celsius": 50.0,
+            "pressure_bar": 100.0,
+            "vibration_mm_s": 4.0,
+        }
+        # Only one metric is pushed over its threshold at a time
+        reading_values[metric] = value
+        return AssetReading(**reading_values)
 
     monkeypatch.setattr(
         "services.asset_monitor.asset_monitor.read_sensor_data",
         fake_read_sensor_data,
     )
-
-    # Disable jitter for deterministic tests
     monkeypatch.setattr(
         "services.asset_monitor.asset_monitor.apply_jitter",
         lambda reading, max_jitter=1.0: reading,
@@ -96,6 +105,7 @@ def test_evaluate_once_triggers_alert_when_over_threshold(
     assert isinstance(alert, Alert)
     assert "ALERT" in alert.message
     assert monitor_config.alerts_file.exists()
+
 
 
 def test_evaluate_once_respects_debounce(
