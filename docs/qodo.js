@@ -296,6 +296,8 @@ async function loadPrs() {
       query: {
         per_page: 30,
         state: "all",
+        sort: "updated",
+        direction: "asc",
       },
     });
     state.prs = prs;
