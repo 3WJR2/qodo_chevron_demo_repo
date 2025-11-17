@@ -1,6 +1,7 @@
 import json
 import time
 from pathlib import Path
+
 import pytest
 import yaml
 
@@ -68,6 +69,7 @@ def test_thresholds_loaded_from_config(tmp_path: Path) -> None:
     assert config.alerts_file.name == "alerts.log"
     assert config.alerts_enabled is True
 
+
 @pytest.mark.parametrize(
     "metric, value",
     [
@@ -107,7 +109,6 @@ def test_evaluate_once_triggers_alert_when_over_threshold(
     assert monitor_config.alerts_file.exists()
 
 
-
 def test_evaluate_once_respects_debounce(
     monitor_config: MonitorConfig,
     monkeypatch: pytest.MonkeyPatch,
@@ -141,6 +142,7 @@ def test_threshold_boundary_does_not_trigger_alert(
     """
     Exact-threshold values should NOT trigger an alert.
     """
+
     def fake_read_sensor_data() -> AssetReading:
         return AssetReading(
             temperature_celsius=monitor_config.thresholds.temperature_celsius,
