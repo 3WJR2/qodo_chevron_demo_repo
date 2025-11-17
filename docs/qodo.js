@@ -273,7 +273,10 @@ function renderMessages(messages) {
           ? `<p>${escapeHtml(msg.body)}</p>`
           : '<p class="muted"><em>No comment body provided.</em></p>';
       const diffBlock = msg.diff_hunk
-        ? `<pre class="diff-block">${formatPatch(msg.diff_hunk)}</pre>`
+        ? `<div class="diff-viewer-dual">
+             <pre class="diff-block">${formatPatch(msg.diff_hunk)}</pre>
+             <pre class="diff-block">${formatPatch(msg.diff_hunk)}</pre>
+           </div>`
         : "";
       const link = msg.html_url
         ? `<a class="message-link" href="${msg.html_url}" target="_blank" rel="noopener">Jump to GitHub</a>`
