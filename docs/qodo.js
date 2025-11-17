@@ -155,6 +155,29 @@ function renderSplitDiff(patch) {
   return `<table class="diff-split"><tbody>${rows.join("")}</tbody></table>`;
 }
 
+function enhanceDiffBlocks(html) {
+  if (!html) {
+    return html;
+  }
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  template.content.querySelectorAll("pre code").forEach((code) => {
+    const text = code.textContent || "";
+    if (text.includes("@@")) {
+      const table = renderSplitDiff(text);
+      if (table) {
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = table;
+        const parentPre = code.closest("pre");
+        if (parentPre) {
+          parentPre.replaceWith(wrapper.firstElementChild);
+        }
+      }
+    }
+  });
+  return template.innerHTML;
+}
+
 const ALLOWED_TAGS = new Set([
   "p",
   "strong",
@@ -345,7 +368,7 @@ function renderMessages(messages) {
         ? `<span class="path">${escapeHtml(msg.path)}${msg.line ? `:${msg.line}` : ""}</span>`
         : "";
       const bodyHtml = msg.body_html
-        ? sanitizeHtmlFragment(msg.body_html)
+        ? enhanceDiffBlocks(sanitizeHtmlFragment(msg.body_html))
         : msg.body
           ? `<p>${escapeHtml(msg.body)}</p>`
           : '<p class="muted"><em>No comment body provided.</em></p>';
