@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Asset Monitor Embed Demo</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">GitHub Pages Demo</p>
+        <h1>Interactive Asset Monitor Widget</h1>
+        <p>
+          This lightweight dashboard runs entirely in the browser, so you can
+          embed it anywhere (docs, Confluence, customer portals) with a single
+          iframe and still control it programmatically.
+        </p>
+        <div class="actions">
+          <button id="startBtn">Start simulation</button>
+          <button id="stopBtn" class="ghost">Stop simulation</button>
+          <button id="sampleBtn" class="ghost">Single sample</button>
+        </div>
+      </div>
+      <div class="live-metrics">
+        <p class="meta">Derived from <code>services/asset_monitor/config.yaml</code></p>
+        <div class="metric" data-metric="temp">
+          <span class="label">Temperature (°C)</span>
+          <span class="value" id="tempValue">--</span>
+        </div>
+        <div class="metric" data-metric="pressure">
+          <span class="label">Pressure (bar)</span>
+          <span class="value" id="pressureValue">--</span>
+        </div>
+        <div class="metric" data-metric="vibration">
+          <span class="label">Vibration (mm/s)</span>
+          <span class="value" id="vibrationValue">--</span>
+        </div>
+        <div class="status" id="alertStatus">Idle</div>
+      </div>
+    </header>
+
+    <main>
+      <section>
+        <h2>Drop-in embed</h2>
+        <p>
+          Publish this repository with GitHub Pages (publishing source: the
+          <code>docs/</code> folder). Then embed the page anywhere by pasting the
+          iframe snippet below. Resize handling is automatic.
+        </p>
+        <pre><code>&lt;iframe
+  src="https://YOUR-USERNAME.github.io/qodo_chevron_demo_repo/"
+  title="Asset monitor"
+  style="width:100%;min-height:420px;border:0;"
+  loading="lazy"
+  allow="clipboard-write"
+>&lt;/iframe></code></pre>
+        <p class="note">
+          Replace <code>YOUR-USERNAME</code> with your GitHub handle. GitHub
+          Pages automatically rebuilds whenever you push to <code>main</code>
+          (see the official docs for details on how publishing works).
+        </p>
+      </section>
+
+      <section>
+        <h2>Interact from the host page</h2>
+        <p>
+          When the widget is embedded inside an iframe, you can control it via
+          <code>postMessage</code>. The widget listens for messages that include
+          <code>{ namespace: "asset-monitor", type: "start" | "stop" | "sample" }</code>.
+        </p>
+        <ol>
+          <li>Grab the iframe element reference.</li>
+          <li>Post a message to its content window using the API below.</li>
+        </ol>
+        <pre><code>const frame = document.querySelector("iframe#asset-monitor");
+frame.contentWindow.postMessage({
+  namespace: "asset-monitor",
+  type: "start"
+}, "*");</code></pre>
+        <p>
+          The widget responds with a <code>postMessage</code> payload containing
+          the latest readings, so your host page can stay in sync.
+        </p>
+        <div class="note">
+          Need more customization? Extend <code>docs/embed.js</code> — the script
+          is self-contained, so you can add themes or hook into real APIs.
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Built with vanilla HTML, CSS, and JavaScript so it works anywhere GitHub
+        Pages runs.
+      </p>
+    </footer>
+
+    <script type="module" src="embed.js"></script>
+  </body>
+</html>
