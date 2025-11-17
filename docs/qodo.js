@@ -344,8 +344,15 @@ function renderDiffFiles(files) {
     btn.className = "diff-file-btn";
     btn.dataset.filename = file.filename;
     btn.innerHTML = `
-      <span class="filename">${escapeHtml(file.filename)}</span>
-      <span class="stats">${file.status} · +${file.additions} / -${file.deletions}</span>
+      <span class="file-label">
+        <span class="file-icon" aria-hidden="true">▸</span>
+        <span class="filename">${escapeHtml(file.filename)}</span>
+      </span>
+      <span class="stats">
+        ${file.status}
+        <span class="diff-chip add">+${file.additions}</span>
+        <span class="diff-chip del">-${file.deletions}</span>
+      </span>
     `;
     btn.addEventListener("click", () => selectDiffFile(file.filename));
     if (state.activeDiffFile === file.filename) {
@@ -363,27 +370,42 @@ function renderDiffViewer(file) {
     return;
   }
 
-  const legend = `
-    <div class="diff-legend">
-      <span class="add">+${file.additions}</span>
-      <span class="del">-${file.deletions}</span>
-    </div>
-  `;
+  const statusMap = {
+    modified: "Modified",
+    added: "Added",
+    removed: "Removed",
+    renamed: "Renamed",
+  };
+  const statusLabel = statusMap[file.status] ?? file.status;
   const patch =
     file.patch && file.patch.trim().length
       ? `<pre class="diff-block">${formatPatch(file.patch)}</pre>`
       : '<div class="empty">Binary file or patch unavailable.</div>';
-  const link = file.blob_url
-    ? `<a class="message-link" href="${file.blob_url}" target="_blank" rel="noopener">Open on GitHub</a>`
+  const viewLink = file.blob_url
+    ? `<a class="diff-action" href="${file.blob_url}" target="_blank" rel="noopener">View file</a>`
+    : "";
+  const rawLink = file.raw_url
+    ? `<a class="diff-action" href="${file.raw_url}" target="_blank" rel="noopener">Raw</a>`
     : "";
 
   els.diffViewer.innerHTML = `
-    <header>
-      <strong>${escapeHtml(file.filename)}</strong>
-      ${legend}
-    </header>
-    ${patch}
-    ${link}
+    <div class="diff-file-header">
+      <div class="diff-file-meta">
+        <span class="diff-file-path">${escapeHtml(file.filename)}</span>
+        <span class="diff-file-status">${statusLabel}</span>
+        <span class="diff-file-totals">
+          <span class="add">+${file.additions}</span>
+          <span class="del">-${file.deletions}</span>
+        </span>
+      </div>
+      <div class="diff-file-actions">
+        ${viewLink}
+        ${rawLink}
+      </div>
+    </div>
+    <div class="diff-scroll">
+      ${patch}
+    </div>
   `;
 }
 

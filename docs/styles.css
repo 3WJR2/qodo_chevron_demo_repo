@@ -388,6 +388,17 @@ footer {
   border: 1px solid transparent;
 }
 
+.diff-file-btn .file-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.diff-file-btn .file-icon {
+  color: var(--muted);
+  transition: transform 0.2s ease;
+}
+
 .diff-file-btn:hover {
   border-color: rgba(56, 189, 248, 0.4);
 }
@@ -395,6 +406,11 @@ footer {
 .diff-file-btn.active {
   border-color: var(--accent);
   background: rgba(2, 132, 199, 0.2);
+}
+
+.diff-file-btn.active .file-icon {
+  transform: rotate(90deg);
+  color: var(--accent);
 }
 
 .diff-file-btn .filename {
@@ -405,6 +421,25 @@ footer {
 .diff-file-btn .stats {
   font-size: 0.8rem;
   color: var(--muted);
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.diff-chip {
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+  font-weight: 600;
+}
+
+.diff-chip.add {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+}
+
+.diff-chip.del {
+  background: rgba(248, 113, 113, 0.1);
+  color: var(--alert);
 }
 
 .diff-viewer {
@@ -425,6 +460,63 @@ footer {
   flex-wrap: wrap;
   font-size: 0.9rem;
   color: var(--muted);
+}
+
+.diff-file-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  padding-bottom: 0.5rem;
+}
+
+.diff-file-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.diff-file-path {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.diff-file-status {
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.diff-file-totals span {
+  margin-right: 0.4rem;
+}
+
+.diff-file-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.diff-action {
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 999px;
+  padding: 0.2rem 0.8rem;
+  font-size: 0.85rem;
+  color: var(--text);
+  text-decoration: none;
+  background: rgba(148, 163, 184, 0.1);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.diff-action:hover {
+  border-color: var(--accent);
+  background: rgba(56, 189, 248, 0.2);
+}
+
+.diff-scroll {
+  margin-top: 0.75rem;
 }
 
 .diff-legend {
@@ -603,11 +695,14 @@ footer {
   margin-top: 0.75rem;
   font-size: 0.85rem;
   overflow-x: auto;
+  counter-reset: diffline;
 }
 
 .diff-line {
   display: block;
   font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  padding-left: 3rem;
+  position: relative;
 }
 
 .diff-line.ctx {
@@ -626,6 +721,15 @@ footer {
 
 .diff-line.hunk {
   color: #fcd34d;
+}
+
+.diff-line::before {
+  counter-increment: diffline;
+  content: counter(diffline);
+  position: absolute;
+  left: 0.75rem;
+  color: rgba(148, 163, 184, 0.6);
+  font-size: 0.8rem;
 }
 
 .gh-markdown table {
