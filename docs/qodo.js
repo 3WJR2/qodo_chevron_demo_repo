@@ -82,6 +82,79 @@ function formatPatch(patch) {
     .join("");
 }
 
+function renderSplitDiff(patch) {
+  if (!patch) {
+    return "";
+  }
+  const lines = patch.split("\n");
+  let leftLine = 0;
+  let rightLine = 0;
+  const rows = [];
+  const hunkRegex = /@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/;
+
+  lines.forEach((line) => {
+    if (!line) {
+      return;
+    }
+    if (line.startsWith("@@")) {
+      const match = line.match(hunkRegex);
+      if (match) {
+        leftLine = Number(match[1]) - 1;
+        rightLine = Number(match[2]) - 1;
+      }
+      rows.push(
+        `<tr class="diff-row hunk"><td colspan="2">${escapeHtml(line)}</td></tr>`,
+      );
+      return;
+    }
+
+    if (line.startsWith("-")) {
+      leftLine += 1;
+      rows.push(
+        `<tr class="diff-row">
+          <td class="diff-cell del">
+            <span class="line-no">${leftLine}</span>
+            <span class="code">${escapeHtml(line.slice(1) || " ")}</span>
+          </td>
+          <td class="diff-cell blank"></td>
+        </tr>`,
+      );
+      return;
+    }
+
+    if (line.startsWith("+")) {
+      rightLine += 1;
+      rows.push(
+        `<tr class="diff-row">
+          <td class="diff-cell blank"></td>
+          <td class="diff-cell add">
+            <span class="line-no">${rightLine}</span>
+            <span class="code">${escapeHtml(line.slice(1) || " ")}</span>
+          </td>
+        </tr>`,
+      );
+      return;
+    }
+
+    leftLine += 1;
+    rightLine += 1;
+    rows.push(
+      `<tr class="diff-row">
+        <td class="diff-cell ctx">
+          <span class="line-no">${leftLine}</span>
+          <span class="code">${escapeHtml(line.slice(1) || " ")}</span>
+        </td>
+        <td class="diff-cell ctx">
+          <span class="line-no">${rightLine}</span>
+          <span class="code">${escapeHtml(line.slice(1) || " ")}</span>
+        </td>
+      </tr>`,
+    );
+  });
+
+  return `<table class="diff-split"><tbody>${rows.join("")}</tbody></table>`;
+}
+
 const ALLOWED_TAGS = new Set([
   "p",
   "strong",
@@ -275,10 +348,7 @@ function renderMessages(messages) {
           ? `<p>${escapeHtml(msg.body)}</p>`
           : '<p class="muted"><em>No comment body provided.</em></p>';
       const diffBlock = msg.diff_hunk
-        ? `<div class="diff-viewer-dual">
-             <pre class="diff-block">${formatPatch(msg.diff_hunk)}</pre>
-             <pre class="diff-block">${formatPatch(msg.diff_hunk)}</pre>
-           </div>`
+        ? renderSplitDiff(msg.diff_hunk)
         : "";
       const link = msg.html_url
         ? `<a class="message-link" href="${msg.html_url}" target="_blank" rel="noopener">Jump to GitHub</a>`
@@ -382,10 +452,7 @@ function renderDiffViewer(file) {
   const statusLabel = statusMap[file.status] ?? file.status;
   const patch =
     file.patch && file.patch.trim().length
-      ? `<div class="diff-viewer-dual">
-          <pre class="diff-block">${formatPatch(file.patch)}</pre>
-          <pre class="diff-block">${formatPatch(file.patch)}</pre>
-        </div>`
+      ? renderSplitDiff(file.patch)
       : '<div class="empty">Binary file or patch unavailable.</div>';
   const viewLink = file.blob_url
     ? `<a class="diff-action" href="${file.blob_url}" target="_blank" rel="noopener">View file</a>`
