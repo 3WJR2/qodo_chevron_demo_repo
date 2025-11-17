@@ -628,6 +628,54 @@ footer {
   color: #fcd34d;
 }
 
+.gh-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+  font-size: 0.85rem;
+}
+
+.gh-markdown th,
+.gh-markdown td {
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  padding: 0.45rem 0.6rem;
+}
+
+.gh-markdown th {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  background: rgba(2, 8, 23, 0.4);
+}
+
+.gh-markdown details {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 0.6rem;
+  padding: 0.4rem 0.8rem;
+  background: rgba(2, 8, 23, 0.5);
+  margin: 0.5rem 0;
+}
+
+.gh-markdown summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.gh-markdown pre {
+  background: rgba(2, 6, 23, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  overflow-x: auto;
+}
+
+.gh-markdown code {
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+}
+
 .empty {
   text-align: center;
   color: var(--muted);

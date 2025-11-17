@@ -36,7 +36,8 @@ function setStatus(message, tone = "info") {
   els.status.className = `status tone-${tone}`;
 }
 
-async function ghFetch(path, token, query = {}) {
+async function ghFetch(path, options = {}) {
+  const { token, query = {}, mediaType } = options;
   const url = new URL(`${API_BASE}/${path}`);
   Object.entries(query).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
@@ -44,7 +45,7 @@ async function ghFetch(path, token, query = {}) {
     }
   });
   const headers = {
-    Accept: "application/vnd.github+json",
+    Accept: mediaType ?? "application/vnd.github+json",
   };
   if (token) {
     headers.Authorization = `Bearer ${token}`;
@@ -64,122 +65,6 @@ function escapeHtml(text) {
     .replaceAll(">", "&gt;");
 }
 
-function parseMarkdownTables(markdown) {
-  const lines = markdown.split("\n");
-  const tables = [];
-  let i = 0;
-  while (i < lines.length) {
-    const line = lines[i];
-    if (line.trim().startsWith("|") && line.includes("|")) {
-      const start = i;
-      const tableLines = [];
-      while (i < lines.length && lines[i].trim().startsWith("|")) {
-        tableLines.push(lines[i]);
-        i++;
-      }
-      if (tableLines.length >= 2 && tableLines[1].includes("---")) {
-        const header = tableLines[0]
-          .split("|")
-          .slice(1, -1)
-          .map((cell) => cell.trim());
-        const rows = tableLines
-          .slice(2)
-          .map((row) =>
-            row
-              .split("|")
-              .slice(1, -1)
-              .map((cell) => cell.trim()),
-          )
-          .filter((row) => row.some((cell) => cell.length));
-        tables.push({ header, rows, start, end: i - 1 });
-        continue;
-      }
-      i = start + 1;
-    } else {
-      i++;
-    }
-  }
-  return tables;
-}
-
-function stripTableText(markdown, tables) {
-  if (!tables.length) {
-    return markdown;
-  }
-  const lines = markdown.split("\n");
-  const skip = new Set();
-  tables.forEach((table) => {
-    for (let idx = table.start; idx <= table.end; idx += 1) {
-      skip.add(idx);
-    }
-  });
-  return lines.filter((_, idx) => !skip.has(idx)).join("\n").trim();
-}
-
-function renderMarkdownLite(markdown) {
-  if (!markdown) {
-    return "";
-  }
-  const lines = markdown.split("\n");
-  const blocks = [];
-  let listBuffer = [];
-  const flushList = () => {
-    if (!listBuffer.length) return;
-    const items = listBuffer.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
-    blocks.push(`<ul>${items}</ul>`);
-    listBuffer = [];
-  };
-
-  lines.forEach((line) => {
-    const trimmed = line.trim();
-    if (!trimmed) {
-      flushList();
-      return;
-    }
-    if (trimmed.startsWith("## ")) {
-      flushList();
-      blocks.push(`<h3>${escapeHtml(trimmed.replace(/^##\s+/, ""))}</h3>`);
-    } else if (trimmed.startsWith("# ")) {
-      flushList();
-      blocks.push(`<h2>${escapeHtml(trimmed.replace(/^#\s+/, ""))}</h2>`);
-    } else if (trimmed.startsWith("- ")) {
-      listBuffer.push(trimmed.replace(/^-+\s*/, ""));
-    } else {
-      flushList();
-      blocks.push(`<p>${escapeHtml(trimmed)}</p>`);
-    }
-  });
-  flushList();
-  return blocks.join("");
-}
-
-function renderMarkdownTables(tables) {
-  if (!tables.length) {
-    return "";
-  }
-  return tables
-    .map((table) => {
-      const header = table.header.map((cell) => `<th>${escapeHtml(cell)}</th>`).join("");
-      const rows = table.rows
-        .map(
-          (row) =>
-            `<tr>${row
-              .map((cell) => `<td>${escapeHtml(cell)}</td>`)
-              .join("")}</tr>`,
-        )
-        .join("");
-      return `
-        <div class="gh-table-card">
-          <table class="gh-table">
-            <thead><tr>${header}</tr></thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>
-      `;
-    })
-    .join("");
-}
-
 function formatPatch(patch) {
   if (!patch) {
     return "";
@@ -195,6 +80,86 @@ function formatPatch(patch) {
       return `<span class="diff-line ${cls}">${escaped || "&nbsp;"}</span>`;
     })
     .join("");
+}
+
+const ALLOWED_TAGS = new Set([
+  "p",
+  "strong",
+  "b",
+  "em",
+  "i",
+  "u",
+  "br",
+  "code",
+  "pre",
+  "blockquote",
+  "ul",
+  "ol",
+  "li",
+  "table",
+  "thead",
+  "tbody",
+  "tr",
+  "td",
+  "th",
+  "details",
+  "summary",
+  "a",
+  "span",
+  "div",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "hr",
+]);
+
+const ALLOWED_ATTRS = {
+  a: ["href", "title"],
+  td: ["align", "colspan", "rowspan"],
+  th: ["align", "colspan", "rowspan"],
+  span: ["class"],
+  code: ["class"],
+  div: ["class"],
+  summary: [],
+  details: [],
+};
+
+function sanitizeHtmlFragment(html) {
+  const template = document.createElement("template");
+  template.innerHTML = html;
+
+  const sanitizeNode = (node) => {
+    [...node.childNodes].forEach((child) => {
+      if (child.nodeType === Node.COMMENT_NODE) {
+        child.remove();
+        return;
+      }
+      if (child.nodeType === Node.ELEMENT_NODE) {
+        const tag = child.tagName.toLowerCase();
+        if (!ALLOWED_TAGS.has(tag)) {
+          child.replaceWith(...child.childNodes);
+          return;
+        }
+        const allowed = ALLOWED_ATTRS[tag] ?? [];
+        [...child.attributes].forEach((attr) => {
+          if (!allowed.includes(attr.name)) {
+            child.removeAttribute(attr.name);
+          }
+        });
+        if (tag === "a" && child.hasAttribute("href")) {
+          child.setAttribute("target", "_blank");
+          child.setAttribute("rel", "noopener");
+        }
+        sanitizeNode(child);
+      }
+    });
+  };
+
+  sanitizeNode(template.content);
+  return template.innerHTML;
 }
 
 function renderPrList(prs) {
@@ -253,9 +218,12 @@ async function loadPrs() {
   try {
     setStatus("Loading pull requests...");
     const token = els.token.value.trim();
-    const prs = await ghFetch("pulls", token, {
-      per_page: 30,
-      state: "all",
+    const prs = await ghFetch("pulls", {
+      token,
+      query: {
+        per_page: 30,
+        state: "all",
+      },
     });
     state.prs = prs;
     filterPrs();
@@ -301,11 +269,11 @@ function renderMessages(messages) {
       const pathLabel = msg.path
         ? `<span class="path">${escapeHtml(msg.path)}${msg.line ? `:${msg.line}` : ""}</span>`
         : "";
-      const tables = parseMarkdownTables(msg.body ?? "");
-      const tableHtml = renderMarkdownTables(tables);
-      const textWithoutTables = stripTableText(msg.body ?? "", tables);
-      const markdownHtml = renderMarkdownLite(textWithoutTables);
-      const bodyHtml = markdownHtml || '<p class="muted"><em>No comment body provided.</em></p>';
+      const bodyHtml = msg.body_html
+        ? sanitizeHtmlFragment(msg.body_html)
+        : msg.body
+          ? `<p>${escapeHtml(msg.body)}</p>`
+          : '<p class="muted"><em>No comment body provided.</em></p>';
       const diffBlock = msg.diff_hunk
         ? `<pre class="diff-block">${formatPatch(msg.diff_hunk)}</pre>`
         : "";
@@ -323,10 +291,9 @@ function renderMessages(messages) {
             <time>${new Date(msg.timestamp).toLocaleString()}</time>
           </div>
         </header>
-        <div class="message-body">
+        <div class="message-body gh-markdown">
           ${bodyHtml}
         </div>
-        ${tableHtml}
         ${diffBlock}
         ${link}
       `;
@@ -336,7 +303,7 @@ function renderMessages(messages) {
 
 function isQodoEntry(entry) {
   const author = (entry.user?.login || "").toLowerCase();
-  const body = (entry.body || "").toLowerCase();
+  const body = (entry.body || entry.body_text || "").toLowerCase();
   return author.includes("qodo") || body.includes("qodo");
 }
 
@@ -345,7 +312,8 @@ function normalizeEntry(entry, kind) {
     id: entry.id,
     kind,
     author: entry.user?.login ?? "unknown",
-    body: entry.body ?? "",
+    body: entry.body ?? entry.body_text ?? "",
+    body_html: entry.body_html ?? null,
     timestamp: entry.submitted_at || entry.created_at || entry.updated_at,
     path: entry.path,
     line: entry.original_line ?? entry.line ?? entry.position ?? null,
@@ -431,7 +399,10 @@ function selectDiffFile(filename) {
 async function loadDiff(pr) {
   try {
     const token = els.token.value.trim();
-    const files = await ghFetch(`pulls/${pr.number}/files`, token, { per_page: 100 });
+    const files = await ghFetch(`pulls/${pr.number}/files`, {
+      token,
+      query: { per_page: 100 },
+    });
     state.diffFiles = files;
     state.activeDiffFile = files[0]?.filename ?? null;
     renderDiffFiles(files);
@@ -459,10 +430,19 @@ async function selectPr(pr) {
 
   try {
     const token = els.token.value.trim();
+    const htmlMediaType = "application/vnd.github.v3.html+json";
     const [reviews, reviewComments, issueComments] = await Promise.all([
-      ghFetch(`pulls/${pr.number}/reviews`, token),
-      ghFetch(`pulls/${pr.number}/comments`, token, { per_page: 100 }),
-      ghFetch(`issues/${pr.number}/comments`, token, { per_page: 100 }),
+      ghFetch(`pulls/${pr.number}/reviews`, { token, mediaType: htmlMediaType }),
+      ghFetch(`pulls/${pr.number}/comments`, {
+        token,
+        query: { per_page: 100 },
+        mediaType: htmlMediaType,
+      }),
+      ghFetch(`issues/${pr.number}/comments`, {
+        token,
+        query: { per_page: 100 },
+        mediaType: htmlMediaType,
+      }),
     ]);
 
     const combined = [
