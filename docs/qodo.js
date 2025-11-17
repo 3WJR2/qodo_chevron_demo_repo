@@ -110,6 +110,10 @@ function filterPrs() {
   });
 
   renderPrList(state.filtered);
+
+  if (!state.active && state.filtered.length) {
+    selectPr(state.filtered[0]);
+  }
 }
 
 async function loadPrs() {
