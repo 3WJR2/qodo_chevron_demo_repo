@@ -297,6 +297,49 @@ footer {
   color: var(--muted);
 }
 
+.tabs {
+  display: inline-flex;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+.tab {
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  padding: 0.5rem 1.1rem;
+  font: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.tab.active {
+  background: rgba(56, 189, 248, 0.18);
+  color: var(--text);
+}
+
+.tab-panels {
+  margin-top: 1rem;
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+.tab-panel iframe {
+  width: 100%;
+  min-height: 480px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 1rem;
+  background: rgba(2, 8, 23, 0.6);
+}
+
 .qodo-messages {
   display: flex;
   flex-direction: column;
@@ -310,9 +353,10 @@ footer {
   border: 1px solid rgba(148, 163, 184, 0.25);
 }
 
-.message-card header {
+.message-header {
   display: flex;
   justify-content: space-between;
+  gap: 1rem;
   font-size: 0.85rem;
   margin-bottom: 0.4rem;
   color: var(--muted);
@@ -323,6 +367,68 @@ footer {
   font-size: 0.9rem;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.message-meta {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.2);
+  color: var(--text);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.chip .path {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.chip.kind-review_comment {
+  background: rgba(248, 113, 113, 0.2);
+  color: var(--alert);
+}
+
+.chip.kind-review {
+  background: rgba(147, 197, 253, 0.2);
+  color: var(--accent);
+}
+
+.chip.kind-issue_comment {
+  background: rgba(56, 189, 248, 0.2);
+  color: var(--accent);
+}
+
+.message-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.message-link::after {
+  content: "↗";
+}
+
+.diff-hunk {
+  background: rgba(2, 8, 23, 0.7);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
 }
 
 .empty {

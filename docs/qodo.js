@@ -15,6 +15,9 @@ const els = {
   prLink: document.getElementById("prLink"),
   diffLink: document.getElementById("diffLink"),
   messages: document.getElementById("qodoMessages"),
+  diffFrame: document.getElementById("diffFrame"),
+  tabs: document.querySelectorAll(".tab"),
+  tabPanels: document.querySelectorAll(".tab-panel"),
 };
 
 const state = {
@@ -47,6 +50,13 @@ async function ghFetch(path, token, query = {}) {
     throw new Error(`${response.status}: ${text}`);
   }
   return response.json();
+}
+
+function escapeHtml(text) {
+  return String(text)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
 function renderPrList(prs) {
@@ -125,6 +135,9 @@ function summarizePr(pr) {
   els.prLink.href = pr.html_url;
   els.diffLink.href = `${pr.html_url}/files`;
   els.prLinks.hidden = false;
+  if (els.diffFrame) {
+    els.diffFrame.src = `${pr.html_url}/files`;
+  }
 }
 
 function renderMessages(messages) {
@@ -139,12 +152,37 @@ function renderMessages(messages) {
     .forEach((msg) => {
       const card = document.createElement("article");
       card.className = "message-card";
+      const label =
+        msg.kind === "review"
+          ? "Review"
+          : msg.kind === "review_comment"
+            ? "Diff comment"
+            : "Issue comment";
+      const pathLabel = msg.path
+        ? `<span class="path">${escapeHtml(msg.path)}${msg.line ? `:${msg.line}` : ""}</span>`
+        : "";
+      const diffBlock = msg.diff_hunk
+        ? `<pre class="diff-hunk"><code>${escapeHtml(msg.diff_hunk)}</code></pre>`
+        : "";
+      const body = msg.body && msg.body.trim().length ? msg.body : "_No comment body provided._";
+      const link = msg.html_url
+        ? `<a class="message-link" href="${msg.html_url}" target="_blank" rel="noopener">Jump to GitHub</a>`
+        : "";
+      const safeBody = escapeHtml(body);
       card.innerHTML = `
-        <header>
-          <span>${msg.author}</span>
-          <time>${new Date(msg.timestamp).toLocaleString()}</time>
+        <header class="message-header">
+          <div class="chip kind-${msg.kind}">
+            ${label}
+            ${pathLabel}
+          </div>
+          <div class="message-meta">
+            <span>@${msg.author}</span>
+            <time>${new Date(msg.timestamp).toLocaleString()}</time>
+          </div>
         </header>
-        <pre>${msg.body}</pre>
+        <pre>${safeBody}</pre>
+        ${diffBlock}
+        ${link}
       `;
       els.messages.appendChild(card);
     });
@@ -156,12 +194,18 @@ function isQodoEntry(entry) {
   return author.includes("qodo") || body.includes("qodo");
 }
 
-function normalizeEntry(entry) {
+function normalizeEntry(entry, kind) {
   return {
     id: entry.id,
+    kind,
     author: entry.user?.login ?? "unknown",
     body: entry.body ?? "",
     timestamp: entry.submitted_at || entry.created_at || entry.updated_at,
+    path: entry.path,
+    line: entry.original_line ?? entry.line ?? entry.position ?? null,
+    html_url: entry.html_url,
+    state: entry.state,
+    diff_hunk: entry.diff_hunk,
   };
 }
 
@@ -182,9 +226,13 @@ async function selectPr(pr) {
       ghFetch(`issues/${pr.number}/comments`, token, { per_page: 100 }),
     ]);
 
-    const combined = [...reviews, ...reviewComments, ...issueComments]
-      .filter(isQodoEntry)
-      .map(normalizeEntry);
+    const combined = [
+      ...reviews.filter(isQodoEntry).map((review) => normalizeEntry(review, "review")),
+      ...reviewComments
+        .filter(isQodoEntry)
+        .map((comment) => normalizeEntry(comment, "review_comment")),
+      ...issueComments.filter(isQodoEntry).map((comment) => normalizeEntry(comment, "issue_comment")),
+    ];
 
     renderMessages(combined);
   } catch (error) {
@@ -199,5 +247,21 @@ async function selectPr(pr) {
 });
 
 els.token.addEventListener("change", () => loadPrs());
+
+els.tabs.forEach((tab) =>
+  tab.addEventListener("click", () => {
+    const targetId = tab.dataset.target;
+    els.tabs.forEach((btn) => {
+      const isActive = btn === tab;
+      btn.classList.toggle("active", isActive);
+      btn.setAttribute("aria-selected", String(isActive));
+    });
+    els.tabPanels.forEach((panel) => {
+      const isActive = panel.id === targetId;
+      panel.classList.toggle("active", isActive);
+      panel.setAttribute("aria-hidden", String(!isActive));
+    });
+  }),
+);
 
 loadPrs();

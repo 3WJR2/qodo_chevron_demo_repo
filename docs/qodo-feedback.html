@@ -61,8 +61,28 @@
           <a id="prLink" class="button-link" target="_blank" rel="noopener">View on GitHub</a>
           <a id="diffLink" class="button-link" target="_blank" rel="noopener">Diff view</a>
         </div>
-        <div class="qodo-messages" id="qodoMessages">
-          <div class="empty">No messages yet.</div>
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-target="feedbackPanel" role="tab" aria-selected="true">
+            Qodo feedback
+          </button>
+          <button class="tab" data-target="diffPanel" role="tab" aria-selected="false">
+            Embedded diff
+          </button>
+        </div>
+        <div class="tab-panels">
+          <div id="feedbackPanel" class="tab-panel active" role="tabpanel">
+            <div class="qodo-messages" id="qodoMessages">
+              <div class="empty">No messages yet.</div>
+            </div>
+          </div>
+          <div id="diffPanel" class="tab-panel" role="tabpanel" aria-hidden="true">
+            <iframe
+              id="diffFrame"
+              title="Embedded diff view"
+              loading="lazy"
+              sandbox="allow-scripts allow-same-origin allow-popups"
+            ></iframe>
+          </div>
         </div>
       </section>
     </main>
