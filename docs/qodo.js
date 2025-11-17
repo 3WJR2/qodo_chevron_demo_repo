@@ -19,6 +19,8 @@ const els = {
   diffTotals: document.getElementById("diffTotals"),
   diffFiles: document.getElementById("diffFiles"),
   diffViewer: document.getElementById("diffViewer"),
+  tabs: document.querySelectorAll(".tab"),
+  tabPanels: document.querySelectorAll(".tab-panel"),
 };
 
 const state = {
@@ -494,5 +496,21 @@ async function selectPr(pr) {
 });
 
 els.token.addEventListener("change", () => loadPrs());
+
+els.tabs.forEach((tab) =>
+  tab.addEventListener("click", () => {
+    const targetId = tab.dataset.target;
+    els.tabs.forEach((btn) => {
+      const isActive = btn === tab;
+      btn.classList.toggle("active", isActive);
+      btn.setAttribute("aria-selected", String(isActive));
+    });
+    els.tabPanels.forEach((panel) => {
+      const isActive = panel.id === targetId;
+      panel.classList.toggle("active", isActive);
+      panel.setAttribute("aria-hidden", String(!isActive));
+    });
+  }),
+);
 
 loadPrs();

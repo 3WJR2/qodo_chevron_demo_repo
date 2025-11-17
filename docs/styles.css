@@ -327,6 +327,18 @@ footer {
   color: var(--text);
 }
 
+.tab-panels {
+  margin-top: 1rem;
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
 .split-panels {
   display: grid;
   gap: 1rem;
