@@ -32,7 +32,7 @@ pip install pytest
 The `docs/` folder contains two drop-in experiences that can be published via GitHub Pages and embedded anywhere with an `<iframe>`:
 
 - `docs/index.html` – an interactive sensor simulator you can control through `postMessage` or the exposed `window.assetMonitorEmbed` helpers.
-- `docs/qodo-feedback.html` – a pull-request viewer that calls the GitHub REST API to surface Qodo-authored review comments. Provide a token (optional) to raise rate limits or access private repos.
+- `docs/qodo-feedback.html` – a pull-request viewer that calls the GitHub REST API to surface Qodo-authored review comments and now renders the entire diff (via the Files API) directly inside the embed. Provide a token (optional) to raise rate limits or access private repos.
 
 ### Publishing instructions
 

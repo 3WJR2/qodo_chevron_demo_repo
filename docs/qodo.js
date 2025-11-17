@@ -15,7 +15,10 @@ const els = {
   prLink: document.getElementById("prLink"),
   diffLink: document.getElementById("diffLink"),
   messages: document.getElementById("qodoMessages"),
-  diffFrame: document.getElementById("diffFrame"),
+  diffTitle: document.getElementById("diffTitle"),
+  diffTotals: document.getElementById("diffTotals"),
+  diffFiles: document.getElementById("diffFiles"),
+  diffViewer: document.getElementById("diffViewer"),
   tabs: document.querySelectorAll(".tab"),
   tabPanels: document.querySelectorAll(".tab-panel"),
 };
@@ -24,6 +27,8 @@ const state = {
   prs: [],
   filtered: [],
   active: null,
+  diffFiles: [],
+  activeDiffFile: null,
 };
 
 function setStatus(message, tone = "info") {
@@ -135,9 +140,7 @@ function summarizePr(pr) {
   els.prLink.href = pr.html_url;
   els.diffLink.href = `${pr.html_url}/files`;
   els.prLinks.hidden = false;
-  if (els.diffFrame) {
-    els.diffFrame.src = `${pr.html_url}/files`;
-  }
+  els.diffTitle.textContent = pr.title;
 }
 
 function renderMessages(messages) {
@@ -209,6 +212,97 @@ function normalizeEntry(entry, kind) {
   };
 }
 
+function renderDiffTotals(files) {
+  const additions = files.reduce((sum, file) => sum + (file.additions || 0), 0);
+  const deletions = files.reduce((sum, file) => sum + (file.deletions || 0), 0);
+  els.diffTotals.textContent = `${files.length} file${files.length === 1 ? "" : "s"} · +${additions} / -${deletions}`;
+}
+
+function renderDiffFiles(files) {
+  if (!files.length) {
+    els.diffFiles.innerHTML = '<div class="empty">No file changes found.</div>';
+    els.diffViewer.innerHTML = '<div class="empty">Nothing to preview.</div>';
+    renderDiffTotals(files);
+    return;
+  }
+
+  els.diffFiles.innerHTML = "";
+  files.forEach((file) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "diff-file-btn";
+    btn.dataset.filename = file.filename;
+    btn.innerHTML = `
+      <span class="filename">${escapeHtml(file.filename)}</span>
+      <span class="stats">${file.status} · +${file.additions} / -${file.deletions}</span>
+    `;
+    btn.addEventListener("click", () => selectDiffFile(file.filename));
+    if (state.activeDiffFile === file.filename) {
+      btn.classList.add("active");
+    }
+    els.diffFiles.appendChild(btn);
+  });
+
+  renderDiffTotals(files);
+}
+
+function renderDiffViewer(file) {
+  if (!file) {
+    els.diffViewer.innerHTML = '<div class="empty">Pick a file to preview the diff.</div>';
+    return;
+  }
+
+  const legend = `
+    <div class="diff-legend">
+      <span class="add">+${file.additions}</span>
+      <span class="del">-${file.deletions}</span>
+    </div>
+  `;
+  const patch =
+    file.patch && file.patch.trim().length
+      ? `<pre class="diff-hunk"><code>${escapeHtml(file.patch)}</code></pre>`
+      : '<div class="empty">Binary file or patch unavailable.</div>';
+  const link = file.blob_url
+    ? `<a class="message-link" href="${file.blob_url}" target="_blank" rel="noopener">Open on GitHub</a>`
+    : "";
+
+  els.diffViewer.innerHTML = `
+    <header>
+      <strong>${escapeHtml(file.filename)}</strong>
+      ${legend}
+    </header>
+    ${patch}
+    ${link}
+  `;
+}
+
+function selectDiffFile(filename) {
+  state.activeDiffFile = filename;
+  const file = state.diffFiles.find((entry) => entry.filename === filename);
+  document
+    .querySelectorAll(".diff-file-btn")
+    .forEach((btn) => btn.classList.toggle("active", btn.dataset.filename === filename));
+  renderDiffViewer(file);
+}
+
+async function loadDiff(pr) {
+  try {
+    const token = els.token.value.trim();
+    const files = await ghFetch(`pulls/${pr.number}/files`, token, { per_page: 100 });
+    state.diffFiles = files;
+    state.activeDiffFile = files[0]?.filename ?? null;
+    renderDiffFiles(files);
+    if (state.activeDiffFile) {
+      selectDiffFile(state.activeDiffFile);
+    }
+  } catch (error) {
+    console.error(error);
+    els.diffFiles.innerHTML = `<div class="empty">Unable to load diff: ${error.message}</div>`;
+    els.diffViewer.innerHTML = '<div class="empty">Unable to show diff.</div>';
+    els.diffTotals.textContent = "0 files · 0 changes";
+  }
+}
+
 async function selectPr(pr) {
   state.active = pr;
   document
@@ -217,6 +311,8 @@ async function selectPr(pr) {
 
   summarizePr(pr);
   els.messages.innerHTML = '<div class="empty">Loading feedback...</div>';
+  els.diffFiles.innerHTML = '<div class="empty">Loading diff…</div>';
+  els.diffViewer.innerHTML = '<div class="empty">Loading diff…</div>';
 
   try {
     const token = els.token.value.trim();
@@ -239,6 +335,8 @@ async function selectPr(pr) {
     console.error(error);
     els.messages.innerHTML = `<div class="empty">Unable to load feedback: ${error.message}</div>`;
   }
+
+  loadDiff(pr);
 }
 
 // Wire up controls

@@ -340,6 +340,119 @@ footer {
   background: rgba(2, 8, 23, 0.6);
 }
 
+.diff-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.diff-meta {
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-align: right;
+}
+
+.diff-layout {
+  margin-top: 1.25rem;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(220px, 320px) 1fr;
+}
+
+.diff-files {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 1rem;
+  padding: 0.75rem;
+  background: rgba(15, 23, 42, 0.4);
+  max-height: 60vh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.diff-file-btn {
+  border: none;
+  background: rgba(2, 8, 23, 0.3);
+  color: var(--text);
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.6rem;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.diff-file-btn:hover {
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.diff-file-btn.active {
+  border-color: var(--accent);
+  background: rgba(2, 132, 199, 0.2);
+}
+
+.diff-file-btn .filename {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.diff-file-btn .stats {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.diff-viewer {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 1rem;
+  background: rgba(2, 8, 23, 0.6);
+  padding: 1rem;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.diff-viewer header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.diff-legend {
+  display: inline-flex;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.diff-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.diff-legend .add {
+  color: var(--success);
+}
+
+.diff-legend .del {
+  color: var(--alert);
+}
+
+.diff-viewer pre {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
 .qodo-messages {
   display: flex;
   flex-direction: column;
@@ -487,6 +600,10 @@ footer {
 
 @media (max-width: 900px) {
   .qodo-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .diff-layout {
     grid-template-columns: 1fr;
   }
 }
