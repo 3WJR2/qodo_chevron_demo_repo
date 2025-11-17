@@ -427,6 +427,65 @@ function renderDiffTotals(files) {
   els.diffTotals.textContent = `${files.length} file${files.length === 1 ? "" : "s"} · +${additions} / -${deletions}`;
 }
 
+function buildFileTree(files) {
+  const root = {};
+  files.forEach((file) => {
+    const parts = file.filename.split("/");
+    let cursor = root;
+    parts.forEach((part, index) => {
+      if (!cursor[part]) {
+        cursor[part] = {
+          __children: {},
+          __files: [],
+          __isFile: index === parts.length - 1,
+        };
+      }
+      if (index === parts.length - 1) {
+        cursor[part].__file = file;
+      } else {
+        cursor = cursor[part].__children;
+      }
+    });
+  });
+  return root;
+}
+
+function renderFileNode(nodeName, nodeData, depth = 0) {
+  const isFile = !!nodeData.__isFile;
+  const indent = depth * 20;
+  if (isFile && nodeData.__file) {
+    const file = nodeData.__file;
+    const status = file.status;
+    return `
+      <button class="diff-file-btn file" style="--indent:${indent}px" data-filename="${file.filename}">
+        <span class="file-label">
+          <span class="file-icon" aria-hidden="true">▸</span>
+          <span class="filename">${escapeHtml(file.filename)}</span>
+        </span>
+        <span class="stats">
+          ${status}
+          <span class="diff-chip add">+${file.additions}</span>
+          <span class="diff-chip del">-${file.deletions}</span>
+        </span>
+      </button>
+    `;
+  }
+
+  const childrenHtml = Object.entries(nodeData.__children || {})
+    .map(([childName, childNode]) => renderFileNode(childName, childNode, depth + 1))
+    .join("");
+
+  return `
+    <details class="diff-dir" open>
+      <summary style="--indent:${indent}px">
+        <span class="dir-icon" aria-hidden="true">▸</span>
+        ${escapeHtml(nodeName)}
+      </summary>
+      ${childrenHtml}
+    </details>
+  `;
+}
+
 function renderDiffFiles(files) {
   if (!files.length) {
     els.diffFiles.innerHTML = '<div class="empty">No file changes found.</div>';
@@ -435,28 +494,16 @@ function renderDiffFiles(files) {
     return;
   }
 
-  els.diffFiles.innerHTML = "";
-  files.forEach((file) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "diff-file-btn";
-    btn.dataset.filename = file.filename;
-    btn.innerHTML = `
-      <span class="file-label">
-        <span class="file-icon" aria-hidden="true">▸</span>
-        <span class="filename">${escapeHtml(file.filename)}</span>
-      </span>
-      <span class="stats">
-        ${file.status}
-        <span class="diff-chip add">+${file.additions}</span>
-        <span class="diff-chip del">-${file.deletions}</span>
-      </span>
-    `;
-    btn.addEventListener("click", () => selectDiffFile(file.filename));
-    if (state.activeDiffFile === file.filename) {
+  const tree = buildFileTree(files);
+  els.diffFiles.innerHTML = Object.entries(tree)
+    .map(([name, node]) => renderFileNode(name, node))
+    .join("");
+
+  els.diffFiles.querySelectorAll(".diff-file-btn.file").forEach((btn) => {
+    btn.addEventListener("click", () => selectDiffFile(btn.dataset.filename));
+    if (state.activeDiffFile === btn.dataset.filename) {
       btn.classList.add("active");
     }
-    els.diffFiles.appendChild(btn);
   });
 
   renderDiffTotals(files);
