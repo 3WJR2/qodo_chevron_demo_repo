@@ -207,20 +207,27 @@ footer {
   padding: 0 clamp(1rem, 4vw, 5rem) 2rem;
   display: grid;
   gap: 1.5rem;
-  grid-template-columns: minmax(240px, 320px) 1fr;
 }
 
 .pr-panel {
-  max-height: 70vh;
+  max-height: 180px;
   overflow: auto;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 0.75rem;
+}
+
+.pr-panel.horizontal {
+  flex-wrap: nowrap;
+}
+
+.top-stack {
+  flex-wrap: wrap;
 }
 
 .pr-item {
   border: none;
-  width: 100%;
+  min-width: 260px;
   text-align: left;
   font: inherit;
   color: inherit;
@@ -280,7 +287,7 @@ footer {
 }
 
 .pr-detail {
-  min-height: 320px;
+  min-height: 400px;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -320,24 +327,14 @@ footer {
   color: var(--text);
 }
 
-.tab-panels {
-  margin-top: 1rem;
+.split-panels {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
 
-.tab-panel {
-  display: none;
-}
-
-.tab-panel.active {
-  display: block;
-}
-
-.tab-panel iframe {
-  width: 100%;
-  min-height: 480px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 1rem;
-  background: rgba(2, 8, 23, 0.6);
+.subpanel {
+  height: 100%;
 }
 
 .diff-header {
@@ -358,6 +355,11 @@ footer {
   display: grid;
   gap: 1rem;
   grid-template-columns: minmax(220px, 320px) 1fr;
+}
+
+.diff-layout.dual {
+  grid-template-columns: minmax(260px, 320px) 1fr;
+  min-height: 360px;
 }
 
 .diff-files {
@@ -440,6 +442,12 @@ footer {
 .diff-chip.del {
   background: rgba(248, 113, 113, 0.1);
   color: var(--alert);
+}
+
+.diff-viewer-dual {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
 }
 
 .diff-viewer {
@@ -835,11 +843,17 @@ footer {
 }
 
 @media (max-width: 900px) {
-  .qodo-layout {
+  .pr-panel {
+    flex-direction: column;
+    max-height: none;
+  }
+
+  .diff-layout,
+  .diff-layout.dual {
     grid-template-columns: 1fr;
   }
 
-  .diff-layout {
+  .diff-viewer-dual {
     grid-template-columns: 1fr;
   }
 }

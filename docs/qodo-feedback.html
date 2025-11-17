@@ -36,8 +36,8 @@
     </header>
 
     <main class="qodo-layout">
-      <section class="panel">
-        <div class="filters">
+      <section class="panel pr-detail" aria-live="polite">
+        <div class="filters top-stack">
           <select id="stateFilter">
             <option value="open">Open</option>
             <option value="closed">Closed</option>
@@ -46,10 +46,7 @@
           <input id="searchInput" type="search" placeholder="Search title or #" />
           <input id="tokenInput" type="password" placeholder="GH token (optional)" />
         </div>
-        <div id="prList" class="pr-panel" aria-live="polite"></div>
-      </section>
-
-      <section class="panel pr-detail" aria-live="polite">
+        <div id="prList" class="pr-panel horizontal" aria-live="polite"></div>
         <div class="detail-header">
           <div class="state-pill" id="prState" data-state="idle">Select a PR</div>
           <h2 id="prTitle">No pull request selected</h2>
@@ -61,34 +58,27 @@
           <a id="prLink" class="button-link" target="_blank" rel="noopener">View on GitHub</a>
           <a id="diffLink" class="button-link" target="_blank" rel="noopener">Diff view</a>
         </div>
-        <div class="tabs" role="tablist">
-          <button class="tab active" data-target="feedbackPanel" role="tab" aria-selected="true">
-            Qodo feedback
-          </button>
-          <button class="tab" data-target="diffPanel" role="tab" aria-selected="false">
-            Embedded diff
-          </button>
-        </div>
-        <div class="tab-panels">
-          <div id="feedbackPanel" class="tab-panel active" role="tabpanel">
+        <div class="split-panels">
+          <div class="panel subpanel" aria-live="polite">
+            <h3>Qodo feedback</h3>
             <div class="qodo-messages" id="qodoMessages">
               <div class="empty">No messages yet.</div>
             </div>
           </div>
-          <div id="diffPanel" class="tab-panel" role="tabpanel" aria-hidden="true">
+          <div class="panel subpanel" aria-live="polite">
             <div class="diff-header">
               <div>
-                <p class="meta">PR diff</p>
+                <p class="meta">File diff</p>
                 <h3 id="diffTitle">Select a pull request</h3>
               </div>
               <div class="diff-meta" id="diffTotals">0 files · 0 changes</div>
             </div>
-            <div class="diff-layout">
+            <div class="diff-layout dual">
               <div class="diff-files" id="diffFiles">
                 <div class="empty">Choose a pull request to load its diff.</div>
               </div>
               <div class="diff-viewer" id="diffViewer">
-                <div class="empty">Pick a file to preview the unified diff.</div>
+                <div class="empty">Pick a file to preview the diff.</div>
               </div>
             </div>
           </div>

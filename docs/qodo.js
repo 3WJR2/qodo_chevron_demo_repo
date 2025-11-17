@@ -19,8 +19,6 @@ const els = {
   diffTotals: document.getElementById("diffTotals"),
   diffFiles: document.getElementById("diffFiles"),
   diffViewer: document.getElementById("diffViewer"),
-  tabs: document.querySelectorAll(".tab"),
-  tabPanels: document.querySelectorAll(".tab-panel"),
 };
 
 const state = {
@@ -379,7 +377,10 @@ function renderDiffViewer(file) {
   const statusLabel = statusMap[file.status] ?? file.status;
   const patch =
     file.patch && file.patch.trim().length
-      ? `<pre class="diff-block">${formatPatch(file.patch)}</pre>`
+      ? `<div class="diff-viewer-dual">
+          <pre class="diff-block">${formatPatch(file.patch)}</pre>
+          <pre class="diff-block">${formatPatch(file.patch)}</pre>
+        </div>`
       : '<div class="empty">Binary file or patch unavailable.</div>';
   const viewLink = file.blob_url
     ? `<a class="diff-action" href="${file.blob_url}" target="_blank" rel="noopener">View file</a>`
@@ -490,21 +491,5 @@ async function selectPr(pr) {
 });
 
 els.token.addEventListener("change", () => loadPrs());
-
-els.tabs.forEach((tab) =>
-  tab.addEventListener("click", () => {
-    const targetId = tab.dataset.target;
-    els.tabs.forEach((btn) => {
-      const isActive = btn === tab;
-      btn.classList.toggle("active", isActive);
-      btn.setAttribute("aria-selected", String(isActive));
-    });
-    els.tabPanels.forEach((panel) => {
-      const isActive = panel.id === targetId;
-      panel.classList.toggle("active", isActive);
-      panel.setAttribute("aria-hidden", String(!isActive));
-    });
-  }),
-);
 
 loadPrs();
