@@ -64,6 +64,139 @@ function escapeHtml(text) {
     .replaceAll(">", "&gt;");
 }
 
+function parseMarkdownTables(markdown) {
+  const lines = markdown.split("\n");
+  const tables = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (line.trim().startsWith("|") && line.includes("|")) {
+      const start = i;
+      const tableLines = [];
+      while (i < lines.length && lines[i].trim().startsWith("|")) {
+        tableLines.push(lines[i]);
+        i++;
+      }
+      if (tableLines.length >= 2 && tableLines[1].includes("---")) {
+        const header = tableLines[0]
+          .split("|")
+          .slice(1, -1)
+          .map((cell) => cell.trim());
+        const rows = tableLines
+          .slice(2)
+          .map((row) =>
+            row
+              .split("|")
+              .slice(1, -1)
+              .map((cell) => cell.trim()),
+          )
+          .filter((row) => row.some((cell) => cell.length));
+        tables.push({ header, rows, start, end: i - 1 });
+        continue;
+      }
+      i = start + 1;
+    } else {
+      i++;
+    }
+  }
+  return tables;
+}
+
+function stripTableText(markdown, tables) {
+  if (!tables.length) {
+    return markdown;
+  }
+  const lines = markdown.split("\n");
+  const skip = new Set();
+  tables.forEach((table) => {
+    for (let idx = table.start; idx <= table.end; idx += 1) {
+      skip.add(idx);
+    }
+  });
+  return lines.filter((_, idx) => !skip.has(idx)).join("\n").trim();
+}
+
+function renderMarkdownLite(markdown) {
+  if (!markdown) {
+    return "";
+  }
+  const lines = markdown.split("\n");
+  const blocks = [];
+  let listBuffer = [];
+  const flushList = () => {
+    if (!listBuffer.length) return;
+    const items = listBuffer.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+    blocks.push(`<ul>${items}</ul>`);
+    listBuffer = [];
+  };
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushList();
+      return;
+    }
+    if (trimmed.startsWith("## ")) {
+      flushList();
+      blocks.push(`<h3>${escapeHtml(trimmed.replace(/^##\s+/, ""))}</h3>`);
+    } else if (trimmed.startsWith("# ")) {
+      flushList();
+      blocks.push(`<h2>${escapeHtml(trimmed.replace(/^#\s+/, ""))}</h2>`);
+    } else if (trimmed.startsWith("- ")) {
+      listBuffer.push(trimmed.replace(/^-+\s*/, ""));
+    } else {
+      flushList();
+      blocks.push(`<p>${escapeHtml(trimmed)}</p>`);
+    }
+  });
+  flushList();
+  return blocks.join("");
+}
+
+function renderMarkdownTables(tables) {
+  if (!tables.length) {
+    return "";
+  }
+  return tables
+    .map((table) => {
+      const header = table.header.map((cell) => `<th>${escapeHtml(cell)}</th>`).join("");
+      const rows = table.rows
+        .map(
+          (row) =>
+            `<tr>${row
+              .map((cell) => `<td>${escapeHtml(cell)}</td>`)
+              .join("")}</tr>`,
+        )
+        .join("");
+      return `
+        <div class="gh-table-card">
+          <table class="gh-table">
+            <thead><tr>${header}</tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function formatPatch(patch) {
+  if (!patch) {
+    return "";
+  }
+  return patch
+    .split("\n")
+    .map((line) => {
+      const escaped = escapeHtml(line);
+      let cls = "ctx";
+      if (line.startsWith("+")) cls = "add";
+      else if (line.startsWith("-")) cls = "del";
+      else if (line.startsWith("@@")) cls = "hunk";
+      return `<span class="diff-line ${cls}">${escaped || "&nbsp;"}</span>`;
+    })
+    .join("");
+}
+
 function renderPrList(prs) {
   if (!prs.length) {
     els.prList.innerHTML = '<div class="empty">No pull requests found.</div>';
@@ -168,14 +301,17 @@ function renderMessages(messages) {
       const pathLabel = msg.path
         ? `<span class="path">${escapeHtml(msg.path)}${msg.line ? `:${msg.line}` : ""}</span>`
         : "";
+      const tables = parseMarkdownTables(msg.body ?? "");
+      const tableHtml = renderMarkdownTables(tables);
+      const textWithoutTables = stripTableText(msg.body ?? "", tables);
+      const markdownHtml = renderMarkdownLite(textWithoutTables);
+      const bodyHtml = markdownHtml || '<p class="muted"><em>No comment body provided.</em></p>';
       const diffBlock = msg.diff_hunk
-        ? `<pre class="diff-hunk"><code>${escapeHtml(msg.diff_hunk)}</code></pre>`
+        ? `<pre class="diff-block">${formatPatch(msg.diff_hunk)}</pre>`
         : "";
-      const body = msg.body && msg.body.trim().length ? msg.body : "_No comment body provided._";
       const link = msg.html_url
         ? `<a class="message-link" href="${msg.html_url}" target="_blank" rel="noopener">Jump to GitHub</a>`
         : "";
-      const safeBody = escapeHtml(body);
       card.innerHTML = `
         <header class="message-header">
           <div class="chip kind-${msg.kind}">
@@ -187,7 +323,10 @@ function renderMessages(messages) {
             <time>${new Date(msg.timestamp).toLocaleString()}</time>
           </div>
         </header>
-        <pre>${safeBody}</pre>
+        <div class="message-body">
+          ${bodyHtml}
+        </div>
+        ${tableHtml}
         ${diffBlock}
         ${link}
       `;
@@ -264,7 +403,7 @@ function renderDiffViewer(file) {
   `;
   const patch =
     file.patch && file.patch.trim().length
-      ? `<pre class="diff-hunk"><code>${escapeHtml(file.patch)}</code></pre>`
+      ? `<pre class="diff-block">${formatPatch(file.patch)}</pre>`
       : '<div class="empty">Binary file or patch unavailable.</div>';
   const link = file.blob_url
     ? `<a class="message-link" href="${file.blob_url}" target="_blank" rel="noopener">Open on GitHub</a>`
