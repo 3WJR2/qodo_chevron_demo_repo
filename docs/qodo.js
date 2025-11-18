@@ -380,9 +380,12 @@ function renderMessages(messages) {
         : "";
       card.innerHTML = `
         <header class="message-header">
-          <div class="chip kind-${msg.kind}">
-            ${label}
-            ${pathLabel}
+          <div class="message-header-left">
+            <img src="qodo-logo.png" alt="Qodo" class="qodo-logo" />
+            <div class="chip kind-${msg.kind}">
+              ${label}
+              ${pathLabel}
+            </div>
           </div>
           <div class="message-meta">
             <span>@${msg.author}</span>
