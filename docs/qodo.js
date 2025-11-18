@@ -400,6 +400,13 @@ function renderMessages(messages) {
       `;
       els.messages.appendChild(card);
     });
+    
+    // Highlight code blocks in message cards
+    if (typeof hljs !== 'undefined') {
+      els.messages.querySelectorAll('pre code').forEach((block) => {
+        hljs.highlightElement(block);
+      });
+    }
 }
 
 function isQodoEntry(entry) {
@@ -512,6 +519,32 @@ function renderDiffFiles(files) {
   renderDiffTotals(files);
 }
 
+function detectLanguageFromFilename(filename) {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  const langMap = {
+    'py': 'python',
+    'js': 'javascript',
+    'ts': 'typescript',
+    'yaml': 'yaml',
+    'yml': 'yaml',
+    'sh': 'bash',
+    'bash': 'bash',
+    'md': 'markdown',
+    'html': 'html',
+    'css': 'css',
+    'json': 'json',
+    'xml': 'xml',
+    'go': 'go',
+    'rs': 'rust',
+    'java': 'java',
+    'cpp': 'cpp',
+    'c': 'c',
+    'diff': 'diff',
+    'patch': 'diff',
+  };
+  return langMap[ext] || null;
+}
+
 function renderDiffViewer(file) {
   if (!file) {
     els.diffViewer.innerHTML = '<div class="empty">Pick a file to preview the diff.</div>';
@@ -555,6 +588,13 @@ function renderDiffViewer(file) {
       ${patch}
     </div>
   `;
+  
+  // Highlight any code blocks in diff viewer (e.g., from embedded code snippets)
+  if (typeof hljs !== 'undefined') {
+    els.diffViewer.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightElement(block);
+    });
+  }
 }
 
 function selectDiffFile(filename) {
