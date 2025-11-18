@@ -69,35 +69,50 @@ function highlightCodeBlocks(container) {
     return;
   }
   
-  // Find all code blocks - use simple selector first
-  // pre code should catch most cases
+  // Find all code blocks - GitHub uses <pre> with spans, not <pre><code>
+  // First try standard <pre><code> structure
   let codeBlocks = Array.from(container.querySelectorAll('pre code'));
-  
-  // Filter out already highlighted blocks
   codeBlocks = codeBlocks.filter(block => !block.classList.contains('hljs'));
   
-  // If we didn't find any, try alternative structures
+  // If no <pre><code> found, look for <pre> tags directly (GitHub's format)
+  // GitHub wraps code in <pre> with <span> children for highlighting
   if (codeBlocks.length === 0) {
-    // Try GitHub's highlight div structure
-    const highlightBlocks = container.querySelectorAll('div.highlight pre code, pre.highlight code');
-    codeBlocks = Array.from(highlightBlocks).filter(block => !block.classList.contains('hljs'));
+    const preTags = container.querySelectorAll('pre:not(.hljs)');
+    preTags.forEach(pre => {
+      // Skip if already highlighted
+      if (pre.classList.contains('hljs')) return;
+      
+      // Check if this pre tag contains code (has text content and isn't empty)
+      const text = pre.textContent?.trim();
+      if (!text || text.length === 0) return;
+      
+      // Check if it already has a code child (standard format)
+      let codeElement = pre.querySelector('code');
+      
+      // If no code child, wrap the content in a code element for highlight.js
+      if (!codeElement) {
+        // Create a code element and move the pre's content into it
+        codeElement = document.createElement('code');
+        // Clone all child nodes
+        const children = Array.from(pre.childNodes);
+        children.forEach(child => {
+          codeElement.appendChild(child.cloneNode(true));
+        });
+        // Clear pre and add code element
+        pre.innerHTML = '';
+        pre.appendChild(codeElement);
+      }
+      
+      if (!codeBlocks.includes(codeElement)) {
+        codeBlocks.push(codeElement);
+      }
+    });
   }
   
-  // Last resort: find any code element and check if it's in a pre
+  // Try GitHub's highlight div structure
   if (codeBlocks.length === 0) {
-    const allCode = container.querySelectorAll('code');
-    codeBlocks = Array.from(allCode).filter(block => {
-      if (block.classList.contains('hljs')) return false;
-      // Check if any ancestor is a pre tag
-      let ancestor = block.parentElement;
-      while (ancestor && ancestor !== container && ancestor !== document.body) {
-        if (ancestor.tagName === 'PRE') {
-          return true;
-        }
-        ancestor = ancestor.parentElement;
-      }
-      return false;
-    });
+    const highlightBlocks = container.querySelectorAll('div.highlight pre code, pre.highlight code');
+    codeBlocks = Array.from(highlightBlocks).filter(block => !block.classList.contains('hljs'));
   }
   
   if (codeBlocks.length === 0) {
