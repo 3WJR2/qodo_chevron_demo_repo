@@ -56,11 +56,26 @@ function highlightCodeBlocks(container) {
     const found = container.querySelectorAll(selector);
     found.forEach(block => {
       // Only include code blocks (not inline code in paragraphs)
-      const parent = block.parentElement;
-      if (parent && (parent.tagName === 'PRE' || parent.classList.contains('highlight'))) {
-        if (!codeBlocks.includes(block)) {
-          codeBlocks.push(block);
+      // Check if this code element is inside a pre tag (at any level)
+      let ancestor = block.parentElement;
+      let isCodeBlock = false;
+      
+      while (ancestor && ancestor !== container && ancestor !== document.body) {
+        if (ancestor.tagName === 'PRE' || ancestor.classList.contains('highlight')) {
+          isCodeBlock = true;
+          break;
         }
+        ancestor = ancestor.parentElement;
+      }
+      
+      // Also check if it's a direct child of pre or in a highlight div
+      const directParent = block.parentElement;
+      if (directParent && (directParent.tagName === 'PRE' || directParent.classList.contains('highlight'))) {
+        isCodeBlock = true;
+      }
+      
+      if (isCodeBlock && !codeBlocks.includes(block)) {
+        codeBlocks.push(block);
       }
     });
   });
