@@ -40,6 +40,14 @@ if (els.token) {
       localStorage.removeItem(TOKEN_STORAGE_KEY);
     }
   });
+  
+  // Also save on blur (when user leaves the field)
+  els.token.addEventListener('blur', () => {
+    const token = els.token.value.trim();
+    if (token) {
+      localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    }
+  });
 }
 
 const state = {
