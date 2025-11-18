@@ -105,6 +105,33 @@ function highlightCodeBlocks(container) {
     const allPre = container.querySelectorAll('pre');
     const allCode = container.querySelectorAll('code');
     console.debug('No code blocks found. Found', allPre.length, 'pre tags and', allCode.length, 'code tags in container');
+    
+    // Detailed debugging - check the structure
+    if (allPre.length > 0) {
+      console.debug('Pre tags structure:');
+      allPre.forEach((pre, i) => {
+        console.debug(`Pre ${i}:`, {
+          hasCodeChild: !!pre.querySelector('code'),
+          directChildren: Array.from(pre.children).map(c => c.tagName),
+          textContent: pre.textContent.substring(0, 100),
+          innerHTML: pre.innerHTML.substring(0, 200)
+        });
+      });
+    }
+    
+    if (allCode.length > 0) {
+      console.debug('Code tags structure:');
+      allCode.forEach((code, i) => {
+        const parent = code.parentElement;
+        console.debug(`Code ${i}:`, {
+          parentTag: parent?.tagName,
+          parentClass: parent?.className,
+          isInPre: parent?.tagName === 'PRE' || code.closest('pre') !== null,
+          textContent: code.textContent.substring(0, 100)
+        });
+      });
+    }
+    
     return;
   }
   
