@@ -33,24 +33,31 @@ const state = {
 
 // Helper function to ensure highlight.js is ready and highlight code blocks
 function highlightCodeBlocks(container) {
-  if (typeof hljs === 'undefined' || !hljs.highlightElement) {
+  if (typeof hljs === 'undefined') {
     // If hljs isn't ready yet, try again after a short delay
     setTimeout(() => highlightCodeBlocks(container), 100);
     return;
   }
   
-  container.querySelectorAll('pre code').forEach((block) => {
+  // Find all code blocks in the container
+  const codeBlocks = container.querySelectorAll('pre code');
+  
+  if (codeBlocks.length === 0) {
+    return;
+  }
+  
+  // Highlight each block individually
+  codeBlocks.forEach((block, index) => {
     // Skip if already highlighted
     if (block.classList.contains('hljs')) {
       return;
     }
     
-    // Try to detect language from class or content
-    const langClass = block.className.match(/language-(\w+)/);
-    const language = langClass ? langClass[1] : null;
-    
     try {
-      if (language) {
+      // Try to detect language from class attribute
+      const langMatch = block.className.match(/language-(\w+)/);
+      if (langMatch) {
+        // Highlight with specific language
         hljs.highlightElement(block);
       } else {
         // Auto-detect language
@@ -250,6 +257,7 @@ const ALLOWED_ATTRS = {
   th: ["align", "colspan", "rowspan"],
   span: ["class"],
   code: ["class"],
+  pre: ["class"],
   div: ["class"],
   summary: [],
   details: [],
@@ -413,7 +421,7 @@ function renderMessages(messages) {
       card.innerHTML = `
         <header class="message-header">
           <div class="message-header-left">
-            <img src="qodo-logo.png" alt="Qodo" class="qodo-logo" onerror="this.onerror=null; this.src='qodo-logo.svg';" />
+            <img src="./qodo-logo.png" alt="Qodo" class="qodo-logo" onerror="this.onerror=null; this.src='./qodo-logo.svg';" />
             <div class="chip kind-${msg.kind}">
               ${label}
               ${pathLabel}
@@ -434,10 +442,12 @@ function renderMessages(messages) {
     });
     
     // Highlight code blocks in message cards
-    // Use setTimeout to ensure DOM is fully updated
-    setTimeout(() => {
-      highlightCodeBlocks(els.messages);
-    }, 0);
+    // Use requestAnimationFrame and setTimeout to ensure DOM is fully updated
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        highlightCodeBlocks(els.messages);
+      }, 100);
+    });
 }
 
 function isQodoEntry(entry) {
@@ -621,9 +631,11 @@ function renderDiffViewer(file) {
   `;
   
   // Highlight any code blocks in diff viewer (e.g., from embedded code snippets)
-  setTimeout(() => {
-    highlightCodeBlocks(els.diffViewer);
-  }, 0);
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      highlightCodeBlocks(els.diffViewer);
+    }, 100);
+  });
 }
 
 function selectDiffFile(filename) {
