@@ -33,39 +33,30 @@ const state = {
 
 // Helper function to ensure highlight.js is ready and highlight code blocks
 function highlightCodeBlocks(container) {
-  if (typeof hljs === 'undefined') {
+  // Check both window.hljs and global hljs (for module scope)
+  const hljsLib = typeof hljs !== 'undefined' ? hljs : (typeof window !== 'undefined' && window.hljs ? window.hljs : null);
+  
+  if (!hljsLib || !hljsLib.highlightElement) {
     // If hljs isn't ready yet, try again after a short delay
     setTimeout(() => highlightCodeBlocks(container), 100);
     return;
   }
   
-  // Find all code blocks in the container
-  const codeBlocks = container.querySelectorAll('pre code');
+  // Find all code blocks in the container that are NOT already highlighted
+  const codeBlocks = container.querySelectorAll('pre code:not(.hljs)');
   
   if (codeBlocks.length === 0) {
     return;
   }
   
   // Highlight each block individually
-  codeBlocks.forEach((block, index) => {
-    // Skip if already highlighted
-    if (block.classList.contains('hljs')) {
-      return;
-    }
-    
+  codeBlocks.forEach((block) => {
     try {
-      // Try to detect language from class attribute
-      const langMatch = block.className.match(/language-(\w+)/);
-      if (langMatch) {
-        // Highlight with specific language
-        hljs.highlightElement(block);
-      } else {
-        // Auto-detect language
-        hljs.highlightElement(block);
-      }
+      // highlightElement will auto-detect language if not specified
+      hljsLib.highlightElement(block);
     } catch (e) {
-      // If highlighting fails, just continue
-      console.debug('Highlight.js error:', e);
+      // If highlighting fails, log for debugging but continue
+      console.warn('Highlight.js error:', e, block);
     }
   });
 }
@@ -439,14 +430,12 @@ function renderMessages(messages) {
         ${link}
       `;
       els.messages.appendChild(card);
-    });
-    
-    // Highlight code blocks in message cards
-    // Use requestAnimationFrame and setTimeout to ensure DOM is fully updated
-    requestAnimationFrame(() => {
+      
+      // Highlight code blocks in this card immediately after appending
+      // Use setTimeout to ensure DOM is ready
       setTimeout(() => {
-        highlightCodeBlocks(els.messages);
-      }, 100);
+        highlightCodeBlocks(card);
+      }, 0);
     });
 }
 
