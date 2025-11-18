@@ -381,7 +381,7 @@ function renderMessages(messages) {
       card.innerHTML = `
         <header class="message-header">
           <div class="message-header-left">
-            <img src="qodo-logo.png" alt="Qodo" class="qodo-logo" />
+            <img src="qodo-logo.png" alt="Qodo" class="qodo-logo" onerror="this.onerror=null; this.src='qodo-logo.svg';" />
             <div class="chip kind-${msg.kind}">
               ${label}
               ${pathLabel}
