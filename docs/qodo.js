@@ -23,6 +23,25 @@ const els = {
   tabPanels: document.querySelectorAll(".tab-panel"),
 };
 
+// Load saved token from localStorage on page load
+const TOKEN_STORAGE_KEY = 'qodo_gh_token';
+if (els.token) {
+  const savedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
+  if (savedToken) {
+    els.token.value = savedToken;
+  }
+  
+  // Save token to localStorage when it changes
+  els.token.addEventListener('input', () => {
+    const token = els.token.value.trim();
+    if (token) {
+      localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    } else {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+    }
+  });
+}
+
 const state = {
   prs: [],
   filtered: [],
