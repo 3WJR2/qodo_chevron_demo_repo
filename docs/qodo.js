@@ -48,43 +48,59 @@ function highlightCodeBlocks(container) {
     'pre code:not(.hljs)',
     'div.highlight pre code:not(.hljs)',
     'pre.highlight code:not(.hljs)',
+    'code:not(.hljs)', // Catch all code elements
   ];
   
   let codeBlocks = [];
   selectors.forEach(selector => {
     const found = container.querySelectorAll(selector);
     found.forEach(block => {
-      if (!codeBlocks.includes(block)) {
-        codeBlocks.push(block);
+      // Only include code blocks (not inline code in paragraphs)
+      const parent = block.parentElement;
+      if (parent && (parent.tagName === 'PRE' || parent.classList.contains('highlight'))) {
+        if (!codeBlocks.includes(block)) {
+          codeBlocks.push(block);
+        }
       }
     });
   });
   
-  // Also check for any code elements inside pre tags that we might have missed
   if (codeBlocks.length === 0) {
-    const allCode = container.querySelectorAll('code:not(.hljs)');
-    allCode.forEach(block => {
-      const parent = block.parentElement;
-      if (parent && parent.tagName === 'PRE' && !codeBlocks.includes(block)) {
-        codeBlocks.push(block);
-      }
-    });
-  }
-  
-  if (codeBlocks.length === 0) {
+    // Debug: log what we're looking at
+    const allPre = container.querySelectorAll('pre');
+    const allCode = container.querySelectorAll('code');
+    console.debug('No code blocks found. Found', allPre.length, 'pre tags and', allCode.length, 'code tags in container');
     return;
   }
   
+  console.debug('Found', codeBlocks.length, 'code blocks to highlight');
+  
   // Highlight each block individually
-  codeBlocks.forEach((block) => {
+  codeBlocks.forEach((block, index) => {
     try {
       // Make sure the block has text content
       if (!block.textContent || block.textContent.trim().length === 0) {
+        console.debug('Skipping empty code block', index);
         return;
       }
       
+      // Check if already highlighted
+      if (block.classList.contains('hljs')) {
+        console.debug('Code block already highlighted', index);
+        return;
+      }
+      
+      console.debug('Highlighting code block', index, 'with content:', block.textContent.substring(0, 100));
+      
       // highlightElement will auto-detect language if not specified
       hljsLib.highlightElement(block);
+      
+      // Verify it worked
+      if (block.classList.contains('hljs')) {
+        console.debug('Successfully highlighted code block', index);
+      } else {
+        console.warn('highlightElement did not add hljs class to block', index);
+      }
     } catch (e) {
       // If highlighting fails, log for debugging but continue
       console.warn('Highlight.js error:', e, block, block.textContent?.substring(0, 50));
