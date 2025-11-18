@@ -42,43 +42,36 @@ function highlightCodeBlocks(container) {
     return;
   }
   
-  // Find all code blocks - GitHub might use different structures
-  // Combine all possible selectors to catch all code blocks
-  const selectors = [
-    'pre code:not(.hljs)',
-    'div.highlight pre code:not(.hljs)',
-    'pre.highlight code:not(.hljs)',
-    'code:not(.hljs)', // Catch all code elements
-  ];
+  // Find all code blocks - use simple selector first
+  // pre code should catch most cases
+  let codeBlocks = Array.from(container.querySelectorAll('pre code'));
   
-  let codeBlocks = [];
-  selectors.forEach(selector => {
-    const found = container.querySelectorAll(selector);
-    found.forEach(block => {
-      // Only include code blocks (not inline code in paragraphs)
-      // Check if this code element is inside a pre tag (at any level)
+  // Filter out already highlighted blocks
+  codeBlocks = codeBlocks.filter(block => !block.classList.contains('hljs'));
+  
+  // If we didn't find any, try alternative structures
+  if (codeBlocks.length === 0) {
+    // Try GitHub's highlight div structure
+    const highlightBlocks = container.querySelectorAll('div.highlight pre code, pre.highlight code');
+    codeBlocks = Array.from(highlightBlocks).filter(block => !block.classList.contains('hljs'));
+  }
+  
+  // Last resort: find any code element and check if it's in a pre
+  if (codeBlocks.length === 0) {
+    const allCode = container.querySelectorAll('code');
+    codeBlocks = Array.from(allCode).filter(block => {
+      if (block.classList.contains('hljs')) return false;
+      // Check if any ancestor is a pre tag
       let ancestor = block.parentElement;
-      let isCodeBlock = false;
-      
       while (ancestor && ancestor !== container && ancestor !== document.body) {
-        if (ancestor.tagName === 'PRE' || ancestor.classList.contains('highlight')) {
-          isCodeBlock = true;
-          break;
+        if (ancestor.tagName === 'PRE') {
+          return true;
         }
         ancestor = ancestor.parentElement;
       }
-      
-      // Also check if it's a direct child of pre or in a highlight div
-      const directParent = block.parentElement;
-      if (directParent && (directParent.tagName === 'PRE' || directParent.classList.contains('highlight'))) {
-        isCodeBlock = true;
-      }
-      
-      if (isCodeBlock && !codeBlocks.includes(block)) {
-        codeBlocks.push(block);
-      }
+      return false;
     });
-  });
+  }
   
   if (codeBlocks.length === 0) {
     // Debug: log what we're looking at
