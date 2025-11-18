@@ -2,29 +2,48 @@
   <!-- Purple circular background -->
   <circle cx="160" cy="160" r="160" fill="#8B5CF6"/>
   
-  <!-- Anteater body (white) -->
-  <g fill="white" stroke="black" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
-    <!-- Head and body outline -->
-    <path d="M 80 200 Q 70 180 75 160 Q 80 140 100 130 Q 120 125 140 130 Q 160 135 180 145 Q 200 155 210 170 Q 215 185 210 200 Q 205 215 190 220 Q 175 225 160 220 Q 145 215 130 210 Q 115 205 100 200 Z"/>
+  <!-- Anteater body (white with black outline) -->
+  <g fill="white" stroke="black" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Head and body -->
+    <path d="M 90 200 
+             Q 85 185 88 170 
+             Q 92 155 105 145 
+             Q 120 138 135 142 
+             Q 150 146 165 155 
+             Q 180 164 190 175 
+             Q 195 185 193 195 
+             Q 190 205 180 210 
+             Q 170 215 160 212 
+             Q 150 209 140 206 
+             Q 130 203 120 200 
+             Z"/>
     
-    <!-- Snout -->
-    <path d="M 210 170 Q 230 175 240 180 Q 250 185 255 190" stroke-width="6"/>
+    <!-- Snout (long and tapering) -->
+    <path d="M 190 175 
+             Q 200 178 210 182 
+             Q 220 186 228 190 
+             Q 235 194 240 198" 
+          stroke-width="2.5"/>
+    
     <!-- Purple snout tip -->
-    <circle cx="255" cy="190" r="8" fill="#8B5CF6" stroke="black" stroke-width="4"/>
+    <circle cx="240" cy="198" r="6" fill="#8B5CF6" stroke="black" stroke-width="2"/>
     
-    <!-- Ears -->
-    <ellipse cx="110" cy="150" rx="12" ry="18"/>
-    <ellipse cx="130" cy="145" rx="10" ry="15"/>
+    <!-- Left ear (small, rounded) -->
+    <ellipse cx="115" cy="155" rx="8" ry="12" fill="white"/>
+    <ellipse cx="115" cy="155" rx="8" ry="12" fill="none" stroke="black" stroke-width="2"/>
+    
+    <!-- Right ear (small, rounded) -->
+    <ellipse cx="130" cy="150" rx="7" ry="11" fill="white"/>
+    <ellipse cx="130" cy="150" rx="7" ry="11" fill="none" stroke="black" stroke-width="2"/>
   </g>
   
-  <!-- Sunglasses -->
-  <g fill="black" stroke="black" stroke-width="3">
+  <!-- Sunglasses (black, rectangular with rounded edges) -->
+  <g fill="black">
     <!-- Left lens -->
-    <rect x="120" y="160" width="35" height="20" rx="4" ry="4"/>
+    <rect x="125" y="165" width="32" height="18" rx="3" ry="3"/>
     <!-- Right lens -->
-    <rect x="165" y="162" width="35" height="20" rx="4" ry="4"/>
+    <rect x="165" y="167" width="32" height="18" rx="3" ry="3"/>
     <!-- Bridge -->
-    <rect x="155" y="165" width="10" height="4" rx="2"/>
+    <rect x="157" y="170" width="8" height="3" rx="1.5"/>
   </g>
 </svg>
-
