@@ -709,6 +709,53 @@ function detectLanguageFromFilename(filename) {
   return langMap[ext] || null;
 }
 
+// Highlight code in diff cells using highlight.js
+function highlightDiffCode(container, filename) {
+  // Check both window.hljs and global hljs (for module scope)
+  const hljsLib = typeof hljs !== 'undefined' ? hljs : (typeof window !== 'undefined' && window.hljs ? window.hljs : null);
+  
+  if (!hljsLib || !hljsLib.highlight) {
+    // If hljs isn't ready yet, try again after a short delay
+    setTimeout(() => highlightDiffCode(container, filename), 100);
+    return;
+  }
+  
+  const language = detectLanguageFromFilename(filename);
+  if (!language) {
+    // No language detected, skip highlighting
+    return;
+  }
+  
+  // Find all code spans in diff cells (but not in hunk rows)
+  const codeSpans = container.querySelectorAll('.diff-cell .code:not(.hunk .code)');
+  
+  if (codeSpans.length === 0) {
+    return;
+  }
+  
+  codeSpans.forEach((span) => {
+    try {
+      const code = span.textContent || '';
+      if (!code.trim() || code.trim().length === 0) {
+        return;
+      }
+      
+      // Use highlight.js to get highlighted HTML
+      const result = hljsLib.highlight(code, { language });
+      
+      // Apply the highlighted HTML, preserving the span structure
+      // highlight.js returns HTML with its own spans, so we replace the content
+      span.innerHTML = result.value;
+      
+      // Add hljs class to indicate it's been highlighted
+      span.classList.add('hljs');
+    } catch (e) {
+      // If highlighting fails (e.g., language not supported), just continue
+      console.debug('Diff highlighting error:', e);
+    }
+  });
+}
+
 function renderDiffViewer(file) {
   if (!file) {
     els.diffViewer.innerHTML = '<div class="empty">Pick a file to preview the diff.</div>';
@@ -753,10 +800,10 @@ function renderDiffViewer(file) {
     </div>
   `;
   
-  // Highlight any code blocks in diff viewer (e.g., from embedded code snippets)
+  // Highlight code in diff cells
   requestAnimationFrame(() => {
     setTimeout(() => {
-      highlightCodeBlocks(els.diffViewer);
+      highlightDiffCode(els.diffViewer, file.filename);
     }, 100);
   });
 }
