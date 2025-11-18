@@ -12,6 +12,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/yaml.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/bash.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/diff.min.js"></script>
+    <script>
+      // Ensure hljs is available globally
+      window.hljsReady = new Promise((resolve) => {
+        if (typeof hljs !== 'undefined') {
+          resolve();
+        } else {
+          window.addEventListener('load', resolve);
+        }
+      });
+    </script>
   </head>
   <body>
     <header class="hero hero-compact">

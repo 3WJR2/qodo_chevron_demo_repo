@@ -31,6 +31,38 @@ const state = {
   activeDiffFile: null,
 };
 
+// Helper function to ensure highlight.js is ready and highlight code blocks
+function highlightCodeBlocks(container) {
+  if (typeof hljs === 'undefined' || !hljs.highlightElement) {
+    // If hljs isn't ready yet, try again after a short delay
+    setTimeout(() => highlightCodeBlocks(container), 100);
+    return;
+  }
+  
+  container.querySelectorAll('pre code').forEach((block) => {
+    // Skip if already highlighted
+    if (block.classList.contains('hljs')) {
+      return;
+    }
+    
+    // Try to detect language from class or content
+    const langClass = block.className.match(/language-(\w+)/);
+    const language = langClass ? langClass[1] : null;
+    
+    try {
+      if (language) {
+        hljs.highlightElement(block);
+      } else {
+        // Auto-detect language
+        hljs.highlightElement(block);
+      }
+    } catch (e) {
+      // If highlighting fails, just continue
+      console.debug('Highlight.js error:', e);
+    }
+  });
+}
+
 function setStatus(message, tone = "info") {
   els.status.textContent = message;
   els.status.className = `status tone-${tone}`;
@@ -402,11 +434,10 @@ function renderMessages(messages) {
     });
     
     // Highlight code blocks in message cards
-    if (typeof hljs !== 'undefined') {
-      els.messages.querySelectorAll('pre code').forEach((block) => {
-        hljs.highlightElement(block);
-      });
-    }
+    // Use setTimeout to ensure DOM is fully updated
+    setTimeout(() => {
+      highlightCodeBlocks(els.messages);
+    }, 0);
 }
 
 function isQodoEntry(entry) {
@@ -590,11 +621,9 @@ function renderDiffViewer(file) {
   `;
   
   // Highlight any code blocks in diff viewer (e.g., from embedded code snippets)
-  if (typeof hljs !== 'undefined') {
-    els.diffViewer.querySelectorAll('pre code').forEach((block) => {
-      hljs.highlightElement(block);
-    });
-  }
+  setTimeout(() => {
+    highlightCodeBlocks(els.diffViewer);
+  }, 0);
 }
 
 function selectDiffFile(filename) {
