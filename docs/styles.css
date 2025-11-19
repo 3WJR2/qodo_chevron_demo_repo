@@ -256,17 +256,21 @@ footer {
 
 .pr-panel {
   max-height: 100%;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   gap: 0.75rem;
   padding: 0.65rem 0.85rem;
   background: rgba(2, 8, 23, 0.4);
-  border-right: 1px solid rgba(148, 163, 184, 0.2);
+  min-height: 0;
 }
 
 .pr-panel.horizontal {
+  flex-direction: row;
   flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .top-stack {
@@ -336,11 +340,47 @@ footer {
 
 .pr-detail {
   min-height: 0;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  grid-template-rows: auto auto 1fr;
   gap: 0;
   flex: 1;
   overflow: hidden;
+}
+
+.pr-detail > .filters {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+
+.pr-detail > #prList {
+  grid-column: 1;
+  grid-row: 2 / -1;
+  border-right: 1px solid rgba(148, 163, 184, 0.2);
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+}
+
+.pr-detail > .detail-header {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.pr-detail > .cta-row {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.pr-detail > .tabs {
+  grid-column: 2;
+  grid-row: 4;
+}
+
+.pr-detail > .tab-panels {
+  grid-column: 2;
+  grid-row: 5;
+  min-height: 0;
 }
 
 .detail-header {
