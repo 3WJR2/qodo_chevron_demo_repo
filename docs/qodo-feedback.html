@@ -30,26 +30,27 @@
           <input id="tokenInput" type="password" placeholder="GH token (optional)" />
         </div>
         <div id="prList" class="pr-panel" aria-live="polite"></div>
-        <div class="detail-header">
-          <div class="state-pill" id="prState" data-state="idle">Select a PR</div>
-          <h2 id="prTitle">No pull request selected</h2>
-          <div class="detail-meta" id="prMeta">
-            Use the list on the left to load Qodo feedback for a pull request.
+        <div class="pr-detail-content">
+          <div class="detail-header">
+            <div class="state-pill" id="prState" data-state="idle">Select a PR</div>
+            <h2 id="prTitle">No pull request selected</h2>
+            <div class="detail-meta" id="prMeta">
+              Use the list on the left to load Qodo feedback for a pull request.
+            </div>
           </div>
-        </div>
-        <div class="cta-row" id="prLinks" hidden>
-          <a id="prLink" class="button-link" target="_blank" rel="noopener">View on GitHub</a>
-          <a id="diffLink" class="button-link" target="_blank" rel="noopener">Diff view</a>
-        </div>
-        <div class="tabs" role="tablist">
-          <button class="tab active" data-target="feedbackPanel" role="tab" aria-selected="true">
-            Qodo feedback
-          </button>
-          <button class="tab" data-target="diffPanel" role="tab" aria-selected="false">
-            Files Changed
-          </button>
-        </div>
-        <div class="tab-panels">
+          <div class="cta-row" id="prLinks" hidden>
+            <a id="prLink" class="button-link" target="_blank" rel="noopener">View on GitHub</a>
+            <a id="diffLink" class="button-link" target="_blank" rel="noopener">Diff view</a>
+          </div>
+          <div class="tabs" role="tablist">
+            <button class="tab active" data-target="feedbackPanel" role="tab" aria-selected="true">
+              Qodo feedback
+            </button>
+            <button class="tab" data-target="diffPanel" role="tab" aria-selected="false">
+              Files Changed
+            </button>
+          </div>
+          <div class="tab-panels">
           <div id="feedbackPanel" class="tab-panel active" role="tabpanel">
             <div class="panel subpanel" aria-live="polite">
               <div class="qodo-messages" id="qodoMessages">
@@ -78,6 +79,7 @@
               </div>
             </div>
           </div>
+        </div>
         </div>
       </section>
     </main>

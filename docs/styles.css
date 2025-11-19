@@ -264,6 +264,8 @@ footer {
   padding: 0.65rem 0.85rem;
   background: rgba(2, 8, 23, 0.4);
   min-height: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .pr-panel.horizontal {
@@ -279,7 +281,8 @@ footer {
 
 .pr-item {
   border: none;
-  min-width: 260px;
+  width: 100%;
+  min-width: 0;
   text-align: left;
   font: inherit;
   color: inherit;
@@ -289,6 +292,7 @@ footer {
   border: 1px solid transparent;
   cursor: pointer;
   transition: border-color 0.2s ease, background 0.2s ease;
+  flex-shrink: 0;
 }
 
 .pr-item:hover {
@@ -342,7 +346,7 @@ footer {
   min-height: 0;
   display: grid;
   grid-template-columns: 320px 1fr;
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: auto 1fr;
   gap: 0;
   flex: 1;
   overflow: hidden;
@@ -355,32 +359,41 @@ footer {
 
 .pr-detail > #prList {
   grid-column: 1;
-  grid-row: 2 / -1;
+  grid-row: 2;
   border-right: 1px solid rgba(148, 163, 184, 0.2);
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.pr-detail > .detail-header {
+.pr-detail-content {
   grid-column: 2;
   grid-row: 2;
-}
-
-.pr-detail > .cta-row {
-  grid-column: 2;
-  grid-row: 3;
-}
-
-.pr-detail > .tabs {
-  grid-column: 2;
-  grid-row: 4;
-}
-
-.pr-detail > .tab-panels {
-  grid-column: 2;
-  grid-row: 5;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
+  overflow: hidden;
+}
+
+.pr-detail-content > .detail-header {
+  flex-shrink: 0;
+}
+
+.pr-detail-content > .cta-row {
+  flex-shrink: 0;
+  padding: 0 1rem;
+}
+
+.pr-detail-content > .tabs {
+  flex-shrink: 0;
+}
+
+.pr-detail-content > .tab-panels {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .detail-header {
@@ -1540,6 +1553,12 @@ pre code.hljs {
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: inherit;
+  width: auto;
+  max-width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .message-card button:hover,
