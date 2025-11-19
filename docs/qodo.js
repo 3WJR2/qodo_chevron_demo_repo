@@ -672,10 +672,6 @@ function renderMessages(messages) {
         }
       }
       
-      const impactChip = impactLevel
-        ? `<div class="chip impact impact-${impactLevel}">Impact: ${impactLevel.charAt(0).toUpperCase() + impactLevel.slice(1)}</div>`
-        : "";
-      
       // Extract title and subtitle if it's a suggestions message
       let titleHtml = "";
       let subtitleHtml = "";
@@ -714,7 +710,6 @@ function renderMessages(messages) {
               ${label}
               ${pathLabel}
             </div>
-            ${impactChip}
           </div>
           <div class="message-meta">
             <span>@${msg.author}</span>
