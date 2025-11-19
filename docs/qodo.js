@@ -22,6 +22,7 @@ const els = {
   tabPanels: document.querySelectorAll(".tab-panel"),
   prPanelToggle: document.getElementById("prPanelToggle"),
   prDetail: document.querySelector(".pr-detail"),
+  filtersToggle: document.getElementById("filtersToggle"),
 };
 
 // Load saved token from localStorage on page load
@@ -1496,6 +1497,15 @@ if (els.prPanelToggle && els.prDetail) {
     const isCollapsed = els.prDetail.classList.contains("pr-panel-collapsed");
     els.prDetail.classList.toggle("pr-panel-collapsed", !isCollapsed);
     els.prPanelToggle.setAttribute("aria-expanded", String(isCollapsed));
+  });
+}
+
+// Filters toggle functionality
+if (els.filtersToggle && els.prDetail) {
+  els.filtersToggle.addEventListener("click", () => {
+    const isCollapsed = els.prDetail.classList.contains("filters-collapsed");
+    els.prDetail.classList.toggle("filters-collapsed", !isCollapsed);
+    els.filtersToggle.setAttribute("aria-expanded", String(!isCollapsed));
   });
 }
 

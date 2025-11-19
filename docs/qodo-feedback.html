@@ -20,13 +20,20 @@
   <body>
     <main class="qodo-layout">
       <section class="panel pr-detail" aria-live="polite">
-        <div class="filters top-stack">
-          <select id="stateFilter">
-            <option value="open">Open</option>
-            <option value="closed">Closed</option>
-            <option value="all" selected>All</option>
-          </select>
-          <input id="tokenInput" type="password" placeholder="GH token (optional)" />
+        <div class="filters-wrapper">
+          <button id="filtersToggle" class="filters-toggle" aria-label="Toggle filters" aria-expanded="true">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M12.78 6.22a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06 0L3.22 7.28a.75.75 0 011.06-1.06L8 9.94l3.72-3.72a.75.75 0 011.06 0z"></path>
+            </svg>
+          </button>
+          <div class="filters top-stack" id="filtersPanel">
+            <select id="stateFilter">
+              <option value="open">Open</option>
+              <option value="closed">Closed</option>
+              <option value="all" selected>All</option>
+            </select>
+            <input id="tokenInput" type="password" placeholder="GH token (optional)" />
+          </div>
         </div>
         <div class="pr-panel-wrapper">
           <button id="prPanelToggle" class="pr-panel-toggle" aria-label="Toggle PR list" aria-expanded="true">
