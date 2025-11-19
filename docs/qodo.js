@@ -3,7 +3,7 @@ const REPO = "qodo_chevron_demo_repo";
 const API_BASE = `https://api.github.com/repos/${OWNER}/${REPO}`;
 
 const els = {
-  status: document.getElementById("statusBanner") || { textContent: '', className: '' },
+  status: document.getElementById("statusBanner"),
   prList: document.getElementById("prList"),
   stateFilter: document.getElementById("stateFilter"),
   search: document.getElementById("searchInput"),
@@ -187,8 +187,13 @@ function highlightCodeBlocks(container) {
 
 function setStatus(message, tone = "info") {
   if (els.status) {
-    els.status.textContent = message;
-    els.status.className = `status tone-${tone}`;
+    try {
+      els.status.textContent = message;
+      els.status.className = `status tone-${tone}`;
+    } catch (e) {
+      // Element might not be fully initialized
+      console.warn("Could not set status:", e);
+    }
   }
   console.log(`Status [${tone}]:`, message);
 }
@@ -889,12 +894,14 @@ async function loadPrs() {
       query: {
         per_page: 30,
         state: "all",
-        sort: "updated",
-        direction: "desc",
+        sort: "created",
+        direction: "asc",
       },
     });
     console.log("Loaded PRs:", prs.length);
-    state.prs = prs;
+    // Sort by PR number in ascending order (1, 2, 3...)
+    const sortedPrs = prs.sort((a, b) => a.number - b.number);
+    state.prs = sortedPrs;
     if (prs.length === 0) {
       els.prList.innerHTML = '<div class="empty">No pull requests found.</div>';
       setStatus("No pull requests found", "info");
