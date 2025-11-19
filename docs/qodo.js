@@ -332,6 +332,93 @@ function enhanceDiffBlocks(html) {
   return template.innerHTML;
 }
 
+function enhanceTables(html) {
+  if (!html) {
+    return html;
+  }
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  
+  template.content.querySelectorAll("table").forEach((table) => {
+    table.classList.add("suggestions-table");
+    
+    // Find header row to determine column indices
+    const headerRow = table.querySelector("thead tr") || table.querySelector("tr");
+    const headerCells = Array.from(headerRow.querySelectorAll("th, td"));
+    
+    let impactIndex = -1;
+    let suggestionIndex = -1;
+    let categoryIndex = -1;
+    
+    headerCells.forEach((cell, index) => {
+      const text = cell.textContent.toLowerCase().trim();
+      if (text.includes("impact")) {
+        impactIndex = index;
+      } else if (text.includes("suggestion")) {
+        suggestionIndex = index;
+      } else if (text.includes("category")) {
+        categoryIndex = index;
+      }
+    });
+    
+    // Process data rows
+    const rows = Array.from(table.querySelectorAll("tr"));
+    rows.forEach((row, rowIndex) => {
+      // Skip header row
+      if (rowIndex === 0 && (headerRow === row || row.querySelector("th"))) {
+        return;
+      }
+      
+      const cells = Array.from(row.querySelectorAll("td, th"));
+      
+      cells.forEach((cell, index) => {
+        // Style impact column
+        if (index === impactIndex && cell.tagName === "TD") {
+          const impactText = cell.textContent.toLowerCase().trim();
+          let impactLevel = null;
+          if (impactText.includes("high")) {
+            impactLevel = "high";
+          } else if (impactText.includes("medium")) {
+            impactLevel = "medium";
+          } else if (impactText.includes("low")) {
+            impactLevel = "low";
+          }
+          
+          if (impactLevel) {
+            cell.className = `impact-cell impact-${impactLevel}`;
+            cell.innerHTML = `<span class="impact-chip impact-${impactLevel}">IMPACT: ${impactLevel.toUpperCase()}</span>`;
+          }
+        }
+        
+        // Process suggestion column (make links clickable with arrow)
+        if (index === suggestionIndex && cell.tagName === "TD") {
+          const links = cell.querySelectorAll("a");
+          links.forEach((link) => {
+            if (!link.querySelector(".suggestion-arrow")) {
+              const arrow = document.createElement("span");
+              arrow.className = "suggestion-arrow";
+              arrow.textContent = "►";
+              link.insertBefore(arrow, link.firstChild);
+              link.classList.add("suggestion-link");
+            }
+          });
+          // If no link exists, wrap text in a link-like style
+          if (links.length === 0 && cell.textContent.trim()) {
+            const text = cell.textContent.trim();
+            if (text.startsWith("►")) {
+              cell.innerHTML = `<span class="suggestion-link"><span class="suggestion-arrow">►</span>${text.substring(1).trim()}</span>`;
+            } else {
+              cell.innerHTML = `<span class="suggestion-link"><span class="suggestion-arrow">►</span>${text}</span>`;
+            }
+          }
+        }
+      });
+    });
+  });
+  
+  return template.innerHTML;
+}
+
 const ALLOWED_TAGS = new Set([
   "p",
   "strong",
@@ -521,11 +608,19 @@ function renderMessages(messages) {
       const pathLabel = msg.path
         ? `<span class="path">${escapeHtml(msg.path)}${msg.line ? `:${msg.line}` : ""}</span>`
         : "";
-      const bodyHtml = msg.body_html
-        ? enhanceDiffBlocks(sanitizeHtmlFragment(msg.body_html))
+      let bodyHtml = msg.body_html
+        ? sanitizeHtmlFragment(msg.body_html)
         : msg.body
           ? `<p>${escapeHtml(msg.body)}</p>`
           : '<p class="muted"><em>No comment body provided.</em></p>';
+      
+      // Enhance tables and diff blocks
+      bodyHtml = enhanceTables(bodyHtml);
+      bodyHtml = enhanceDiffBlocks(bodyHtml);
+      
+      // Check if this is a "PR Code Suggestions" message
+      const isSuggestionsMessage = (msg.body || msg.body_html || "").toLowerCase().includes("pr code suggestions") || 
+                                   (msg.body || msg.body_html || "").toLowerCase().includes("code suggestions");
       const diffBlock = msg.diff_hunk
         ? renderSplitDiff(msg.diff_hunk)
         : "";
@@ -581,6 +676,36 @@ function renderMessages(messages) {
         ? `<div class="chip impact impact-${impactLevel}">Impact: ${impactLevel.charAt(0).toUpperCase() + impactLevel.slice(1)}</div>`
         : "";
       
+      // Extract title and subtitle if it's a suggestions message
+      let titleHtml = "";
+      let subtitleHtml = "";
+      let contentHtml = bodyHtml;
+      
+      if (isSuggestionsMessage) {
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = bodyHtml;
+        
+        // Look for h1/h2/h3 with "PR Code Suggestions"
+        const titleEl = tempDiv.querySelector("h1, h2, h3");
+        if (titleEl && titleEl.textContent.toLowerCase().includes("code suggestions")) {
+          titleHtml = `<h1 class="suggestions-title">${titleEl.innerHTML}</h1>`;
+          titleEl.remove();
+        } else {
+          titleHtml = '<h1 class="suggestions-title">PR Code Suggestions ✨</h1>';
+        }
+        
+        // Look for subtitle paragraph
+        const firstP = tempDiv.querySelector("p");
+        if (firstP && !firstP.textContent.toLowerCase().includes("impact")) {
+          subtitleHtml = `<p class="suggestions-subtitle">${firstP.innerHTML}</p>`;
+          firstP.remove();
+        } else {
+          subtitleHtml = '<p class="suggestions-subtitle">Explore these optional code suggestions:</p>';
+        }
+        
+        contentHtml = tempDiv.innerHTML;
+      }
+      
       card.innerHTML = `
         <header class="message-header">
           <div class="message-header-left">
@@ -597,7 +722,9 @@ function renderMessages(messages) {
           </div>
         </header>
         <div class="message-body gh-markdown">
-          ${bodyHtml}
+          ${titleHtml}
+          ${subtitleHtml}
+          ${contentHtml}
         </div>
         ${diffBlock}
         ${link}
