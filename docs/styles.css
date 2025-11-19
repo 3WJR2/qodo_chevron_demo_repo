@@ -357,10 +357,103 @@ footer {
   grid-row: 1;
 }
 
-.pr-detail > #prList {
+.pr-panel-wrapper {
   grid-column: 1;
   grid-row: 2;
+  display: flex;
+  flex-direction: row;
   border-right: 1px solid rgba(148, 163, 184, 0.2);
+  position: relative;
+  min-height: 0;
+}
+
+.pr-panel-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pr-panel-search {
+  flex-shrink: 0;
+  padding: 0.75rem;
+  background: rgba(15, 23, 42, 0.4);
+  border: none;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  color: var(--text);
+  font-size: 0.9rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pr-panel-search:focus {
+  outline: none;
+  background: rgba(15, 23, 42, 0.6);
+  border-bottom-color: var(--accent);
+}
+
+.pr-panel-search::placeholder {
+  color: var(--muted);
+}
+
+.pr-detail.pr-panel-collapsed .pr-panel-wrapper {
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  border-right: none;
+}
+
+.pr-detail.pr-panel-collapsed {
+  grid-template-columns: 0 1fr;
+}
+
+.pr-panel-toggle {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 20px;
+  height: 60px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-left: none;
+  border-radius: 0 0.5rem 0.5rem 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  transition: all 0.2s ease;
+  padding: 0;
+  margin-left: -1px;
+}
+
+.pr-panel-toggle:hover {
+  background: rgba(15, 23, 42, 1);
+  border-color: rgba(148, 163, 184, 0.5);
+  color: var(--accent);
+}
+
+.pr-detail.pr-panel-collapsed .pr-panel-wrapper {
+  position: relative;
+}
+
+.pr-detail.pr-panel-collapsed .pr-panel-toggle {
+  left: 0;
+  border-left: 1px solid rgba(148, 163, 184, 0.3);
+  border-right: none;
+  border-radius: 0.5rem 0 0 0.5rem;
+  margin-left: 0;
+}
+
+.pr-detail.pr-panel-collapsed .pr-panel-toggle svg {
+  transform: rotate(180deg);
+}
+
+.pr-detail > .pr-panel-wrapper > .pr-panel-content > #prList {
+  flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
@@ -384,10 +477,29 @@ footer {
 .pr-detail-content > .cta-row {
   flex-shrink: 0;
   padding: 0 1rem;
+  display: none;
+}
+
+.tabs-wrapper {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.3);
 }
 
 .pr-detail-content > .tabs {
   flex-shrink: 0;
+}
+
+.tabs-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
 }
 
 .pr-detail-content > .tab-panels {
@@ -416,9 +528,9 @@ footer {
   border-radius: 999px;
   overflow: hidden;
   margin: 0;
-  padding: 0 1rem;
-  background: rgba(15, 23, 42, 0.3);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  padding: 0;
+  background: transparent;
+  border-bottom: none;
 }
 
 .tab {

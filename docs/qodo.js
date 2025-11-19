@@ -13,7 +13,6 @@ const els = {
   prMeta: document.getElementById("prMeta"),
   prLinks: document.getElementById("prLinks"),
   prLink: document.getElementById("prLink"),
-  diffLink: document.getElementById("diffLink"),
   messages: document.getElementById("qodoMessages"),
   diffTotals: document.getElementById("diffTotals"),
   diffFiles: document.getElementById("diffFiles"),
@@ -21,6 +20,8 @@ const els = {
   fileFilterInput: document.getElementById("fileFilterInput"),
   tabs: document.querySelectorAll(".tab"),
   tabPanels: document.querySelectorAll(".tab-panel"),
+  prPanelToggle: document.getElementById("prPanelToggle"),
+  prDetail: document.querySelector(".pr-detail"),
 };
 
 // Load saved token from localStorage on page load
@@ -925,7 +926,6 @@ function summarizePr(pr) {
     pr.created_at,
   ).toLocaleString()} · ${pr.comments} comments`;
   els.prLink.href = pr.html_url;
-  els.diffLink.href = `${pr.html_url}/files`;
   els.prLinks.hidden = false;
 }
 
@@ -1489,5 +1489,14 @@ els.tabs.forEach((tab) =>
     });
   }),
 );
+
+// PR Panel toggle functionality
+if (els.prPanelToggle && els.prDetail) {
+  els.prPanelToggle.addEventListener("click", () => {
+    const isCollapsed = els.prDetail.classList.contains("pr-panel-collapsed");
+    els.prDetail.classList.toggle("pr-panel-collapsed", !isCollapsed);
+    els.prPanelToggle.setAttribute("aria-expanded", String(isCollapsed));
+  });
+}
 
 loadPrs();

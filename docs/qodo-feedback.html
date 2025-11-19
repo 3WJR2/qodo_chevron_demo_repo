@@ -26,10 +26,19 @@
             <option value="closed">Closed</option>
             <option value="all" selected>All</option>
           </select>
-          <input id="searchInput" type="search" placeholder="Search title or #" />
           <input id="tokenInput" type="password" placeholder="GH token (optional)" />
         </div>
-        <div id="prList" class="pr-panel" aria-live="polite"></div>
+        <div class="pr-panel-wrapper">
+          <button id="prPanelToggle" class="pr-panel-toggle" aria-label="Toggle PR list" aria-expanded="true">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M9.78 12.78a.75.75 0 01-1.06 0L4.47 8.53a.75.75 0 010-1.06l4.25-4.25a.75.75 0 011.06 1.06L6.06 8l3.72 3.72a.75.75 0 010 1.06z"></path>
+            </svg>
+          </button>
+          <div class="pr-panel-content">
+            <input id="searchInput" type="search" class="pr-panel-search" placeholder="Search title or #" />
+            <div id="prList" class="pr-panel" aria-live="polite"></div>
+          </div>
+        </div>
         <div class="pr-detail-content">
           <div class="detail-header">
             <div class="state-pill" id="prState" data-state="idle">Select a PR</div>
@@ -38,17 +47,18 @@
               Use the list on the left to load Qodo feedback for a pull request.
             </div>
           </div>
-          <div class="cta-row" id="prLinks" hidden>
-            <a id="prLink" class="button-link" target="_blank" rel="noopener">View on GitHub</a>
-            <a id="diffLink" class="button-link" target="_blank" rel="noopener">Diff view</a>
-          </div>
-          <div class="tabs" role="tablist">
-            <button class="tab active" data-target="feedbackPanel" role="tab" aria-selected="true">
-              Qodo feedback
-            </button>
-            <button class="tab" data-target="diffPanel" role="tab" aria-selected="false">
-              Files Changed
-            </button>
+          <div class="tabs-wrapper">
+            <div class="tabs" role="tablist">
+              <button class="tab active" data-target="feedbackPanel" role="tab" aria-selected="true">
+                Qodo feedback
+              </button>
+              <button class="tab" data-target="diffPanel" role="tab" aria-selected="false">
+                Files Changed
+              </button>
+            </div>
+            <div class="tabs-actions" id="prLinks" hidden>
+              <a id="prLink" class="button-link" target="_blank" rel="noopener">View on GitHub</a>
+            </div>
           </div>
           <div class="tab-panels">
           <div id="feedbackPanel" class="tab-panel active" role="tabpanel">
