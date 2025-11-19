@@ -491,12 +491,23 @@ function attachButtonHandlers(card) {
   });
 }
 
-function handleMoreButton(button) {
-  // Find associated content to expand/collapse
+async function handleMoreButton(button) {
   const card = button.closest(".message-card");
   if (!card) return;
   
-  // Look for hidden content or next sibling
+  // Check if this is a "More" button that should generate more suggestions
+  const buttonText = button.textContent.toLowerCase().trim();
+  const isGenerateMore = buttonText.includes("more") && 
+                         (card.querySelector(".suggestions-table") || 
+                          card.querySelector(".suggestions-title"));
+  
+  if (isGenerateMore) {
+    // Generate more suggestions via Qodo API
+    await generateMoreSuggestions(button, card);
+    return;
+  }
+  
+  // Otherwise, handle as expand/collapse
   let target = button.nextElementSibling;
   
   // If no next sibling, look for data-target
@@ -522,6 +533,132 @@ function handleMoreButton(button) {
     button.classList.toggle("active");
     console.log("More button clicked - no target found");
   }
+}
+
+async function generateMoreSuggestions(button, card) {
+  if (!state.active) {
+    console.error("No active PR selected");
+    return;
+  }
+  
+  const pr = state.active;
+  const messageId = card.dataset.messageId;
+  const token = els.token.value.trim();
+  
+  // Disable button and show loading state
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = "Generating...";
+  
+  try {
+    // Call Qodo API to generate more suggestions
+    // You can configure this endpoint - for now using a GitHub API approach
+    // Option 1: Post a comment to trigger Qodo (if Qodo listens to comments)
+    // Option 2: Call Qodo API directly (if you have the endpoint)
+    
+    // For now, we'll use GitHub API to post a comment that triggers Qodo
+    // Replace this with your actual Qodo API endpoint
+    const qodoApiUrl = button.getAttribute("data-api-url") || 
+                       process.env.QODO_API_URL || 
+                       null;
+    
+    if (qodoApiUrl) {
+      // Direct Qodo API call
+      const response = await fetch(qodoApiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          pr_number: pr.number,
+          pr_url: pr.html_url,
+          message_id: messageId,
+          repo: REPO,
+          owner: OWNER,
+          action: "generate_more_suggestions",
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Qodo API error: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      // Update the UI with new suggestions
+      if (result.suggestions) {
+        updateSuggestionsTable(card, result.suggestions);
+      }
+    } else {
+      // Fallback: Use GitHub API to post a comment that triggers Qodo
+      // This assumes Qodo bot listens for specific comment patterns
+      const triggerComment = await ghFetch(`issues/${pr.number}/comments`, {
+        token,
+        method: "POST",
+        body: JSON.stringify({
+          body: "@qodo-merge-pro[bot] generate more suggestions",
+        }),
+      });
+      
+      // Show success message
+      button.textContent = "Requested!";
+      button.style.background = "rgba(34, 197, 94, 0.2)";
+      
+      // Reload messages after a delay to show new suggestions
+      setTimeout(async () => {
+        await selectPr(pr);
+      }, 3000);
+    }
+  } catch (error) {
+    console.error("Error generating more suggestions:", error);
+    button.textContent = "Error - Try again";
+    button.style.background = "rgba(248, 113, 113, 0.2)";
+    
+    setTimeout(() => {
+      button.textContent = originalText;
+      button.disabled = false;
+      button.style.background = "";
+    }, 2000);
+  } finally {
+    // Re-enable button after a delay if not already handled
+    setTimeout(() => {
+      if (button.disabled && button.textContent === "Generating...") {
+        button.textContent = originalText;
+        button.disabled = false;
+      }
+    }, 10000);
+  }
+}
+
+function updateSuggestionsTable(card, newSuggestions) {
+  const table = card.querySelector(".suggestions-table");
+  if (!table) return;
+  
+  const tbody = table.querySelector("tbody") || table;
+  
+  // Add new suggestion rows
+  newSuggestions.forEach((suggestion) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${escapeHtml(suggestion.category || "")}</td>
+      <td>
+        <a href="${suggestion.url || "#"}" class="suggestion-link">
+          <span class="suggestion-arrow">►</span>
+          ${escapeHtml(suggestion.text || suggestion.suggestion || "")}
+        </a>
+      </td>
+      <td class="impact-cell impact-${suggestion.impact?.toLowerCase() || "high"}">
+        <span class="impact-chip impact-${suggestion.impact?.toLowerCase() || "high"}">
+          IMPACT: ${(suggestion.impact || "HIGH").toUpperCase()}
+        </span>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+  
+  // Re-attach handlers for new content
+  attachButtonHandlers(card);
 }
 
 function handleUpdateButton(button) {
@@ -896,6 +1033,12 @@ function renderMessages(messages) {
         ${diffBlock}
         ${link}
       `;
+      
+      // Store message data on the card for API calls
+      card.dataset.messageId = msg.id;
+      card.dataset.messageKind = msg.kind;
+      card.dataset.messageUrl = msg.html_url || '';
+      
       els.messages.appendChild(card);
       
       // Make buttons interactive
@@ -974,9 +1117,29 @@ function buildFileTree(files) {
   return root;
 }
 
-function renderFileNode(nodeName, nodeData, depth = 0) {
+function renderFileNode(nodeName, nodeData, depth = 0, isLast = false, parentPath = []) {
   const isFile = !!nodeData.__isFile;
   const indent = depth * 16;
+  const currentPath = [...parentPath, depth];
+  
+  // Build hierarchy line indicators
+  let hierarchyLines = '';
+  for (let i = 0; i < depth; i++) {
+    const isLastAtLevel = i < parentPath.length && parentPath[i];
+    if (isLastAtLevel) {
+      hierarchyLines += '<span class="tree-line tree-line-space"></span>';
+    } else {
+      hierarchyLines += '<span class="tree-line tree-line-vertical"></span>';
+    }
+  }
+  
+  // Add connector line for current item
+  if (depth > 0) {
+    hierarchyLines += isLast 
+      ? '<span class="tree-line tree-line-corner-last"></span>'
+      : '<span class="tree-line tree-line-corner"></span>';
+  }
+  
   if (isFile && nodeData.__file) {
     const file = nodeData.__file;
     const status = file.status;
@@ -992,6 +1155,7 @@ function renderFileNode(nodeName, nodeData, depth = 0) {
     
     return `
       <button class="diff-file-btn file" style="--indent:${indent}px" data-filename="${file.filename}">
+        <span class="file-tree-lines">${hierarchyLines}</span>
         <span class="file-label">
           ${statusIcon}
           <span class="filename">${escapeHtml(file.filename)}</span>
@@ -1004,13 +1168,19 @@ function renderFileNode(nodeName, nodeData, depth = 0) {
     `;
   }
 
-  const childrenHtml = Object.entries(nodeData.__children || {})
-    .map(([childName, childNode]) => renderFileNode(childName, childNode, depth + 1))
+  const children = Object.entries(nodeData.__children || {});
+  const childrenHtml = children
+    .map(([childName, childNode], index) => {
+      const isLastChild = index === children.length - 1;
+      const childPath = currentPath.map((p, idx) => idx < currentPath.length - 1 ? p : (isLast ? true : false));
+      return renderFileNode(childName, childNode, depth + 1, isLastChild, childPath);
+    })
     .join("");
 
   return `
     <details class="diff-dir" open>
       <summary style="--indent:${indent}px">
+        <span class="file-tree-lines">${hierarchyLines}</span>
         <span class="dir-icon" aria-hidden="true">▸</span>
         ${escapeHtml(nodeName)}
       </summary>
@@ -1033,8 +1203,9 @@ function renderDiffFiles(files, filter = '') {
     : files;
 
   const tree = buildFileTree(filteredFiles);
-  els.diffFiles.innerHTML = Object.entries(tree)
-    .map(([name, node]) => renderFileNode(name, node))
+  const rootEntries = Object.entries(tree);
+  els.diffFiles.innerHTML = rootEntries
+    .map(([name, node], index) => renderFileNode(name, node, 0, index === rootEntries.length - 1, []))
     .join("");
 
   els.diffFiles.querySelectorAll(".diff-file-btn.file").forEach((btn) => {

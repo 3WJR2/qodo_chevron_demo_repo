@@ -18,34 +18,6 @@
     </script>
   </head>
   <body>
-    <header class="hero hero-compact">
-      <div>
-        <p class="eyebrow">GitHub + Qodo</p>
-        <h1>Live PR Feedback Viewer</h1>
-        <p>
-          Plug this page into an iframe to browse pull requests and surface Qodo
-          review comments directly inside your internal portals, demos, or
-          narrative decks without leaving the page.
-        </p>
-        <div class="actions">
-          <a class="button-link" href="https://github.com/3WJR2/qodo_chevron_demo_repo/pulls" target="_blank" rel="noopener">Open PRs on GitHub</a>
-          <a class="button-link" href="index.html">Back to widget demo</a>
-        </div>
-      </div>
-      <div class="live-metrics">
-        <p class="meta">Repository</p>
-        <div class="metric">
-          <span class="label">Owner / Repo</span>
-          <span class="value">3WJR2 / qodo_chevron_demo_repo</span>
-        </div>
-        <div class="metric">
-          <span class="label">Data source</span>
-          <span class="value">GitHub REST API</span>
-        </div>
-        <div class="status" id="statusBanner">Idle</div>
-      </div>
-    </header>
-
     <main class="qodo-layout">
       <section class="panel pr-detail" aria-live="polite">
         <div class="filters top-stack">
@@ -110,13 +82,6 @@
       </section>
     </main>
 
-    <footer>
-      <p>
-        Publishing instructions follow the GitHub Pages + Jekyll workflow outlined
-        in the official docs, so pushes to <code>main</code> automatically update
-        this view.
-      </p>
-    </footer>
 
     <script type="module" src="qodo.js"></script>
   </body>
