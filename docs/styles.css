@@ -178,11 +178,15 @@ pre {
   padding: 1rem;
   border-radius: 0.75rem;
   overflow-x: auto;
-  font-size: 0.9rem;
+  font-size: 12px;
+  line-height: 24px;
+  font-family: "SFMono-Regular", "Consolas", "Liberation Mono", "Menlo", monospace;
 }
 
 code {
-  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-family: "SFMono-Regular", "Consolas", "Liberation Mono", "Menlo", monospace;
+  font-size: 12px;
+  line-height: 24px;
 }
 
 .note {
@@ -852,9 +856,11 @@ footer {
 
 .message-card pre {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 12px;
+  line-height: 24px;
   white-space: pre-wrap;
   word-break: break-word;
+  font-family: "SFMono-Regular", "Consolas", "Liberation Mono", "Menlo", monospace;
 }
 
 .muted {
@@ -1125,12 +1131,16 @@ footer {
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 0.75rem;
   padding: 0.75rem;
-  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-family: "SFMono-Regular", "Consolas", "Liberation Mono", "Menlo", monospace;
+  font-size: 12px;
+  line-height: 24px;
   overflow-x: auto;
 }
 
 .gh-markdown code {
-  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-family: "SFMono-Regular", "Consolas", "Liberation Mono", "Menlo", monospace;
+  font-size: 12px;
+  line-height: 24px;
 }
 
 /* Highlight.js integration */
@@ -1140,6 +1150,9 @@ footer {
   padding: 0.75rem !important;
   border-radius: 0.75rem !important;
   border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  font-family: "SFMono-Regular", "Consolas", "Liberation Mono", "Menlo", monospace !important;
+  font-size: 12px !important;
+  line-height: 24px !important;
 }
 
 .message-body .hljs {
@@ -1159,6 +1172,9 @@ footer {
 pre code.hljs {
   display: block;
   overflow-x: auto;
+  font-size: 12px !important;
+  line-height: 24px !important;
+  font-family: "SFMono-Regular", "Consolas", "Liberation Mono", "Menlo", monospace !important;
 }
 
 .empty {
