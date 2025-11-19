@@ -3,7 +3,7 @@ const REPO = "qodo_chevron_demo_repo";
 const API_BASE = `https://api.github.com/repos/${OWNER}/${REPO}`;
 
 const els = {
-  status: document.getElementById("statusBanner"),
+  status: document.getElementById("statusBanner") || { textContent: '', className: '' },
   prList: document.getElementById("prList"),
   stateFilter: document.getElementById("stateFilter"),
   search: document.getElementById("searchInput"),
@@ -186,8 +186,11 @@ function highlightCodeBlocks(container) {
 }
 
 function setStatus(message, tone = "info") {
-  els.status.textContent = message;
-  els.status.className = `status tone-${tone}`;
+  if (els.status) {
+    els.status.textContent = message;
+    els.status.className = `status tone-${tone}`;
+  }
+  console.log(`Status [${tone}]:`, message);
 }
 
 async function ghFetch(path, options = {}) {
@@ -204,12 +207,17 @@ async function ghFetch(path, options = {}) {
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
+  console.log("Fetching:", url.toString());
   const response = await fetch(url.toString(), { headers });
+  console.log("Response status:", response.status, response.statusText);
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`${response.status}: ${text}`);
+    console.error("API Error:", response.status, text);
+    throw new Error(`${response.status}: ${text.substring(0, 200)}`);
   }
-  return response.json();
+  const data = await response.json();
+  console.log("API Response:", Array.isArray(data) ? `${data.length} items` : "object");
+  return data;
 }
 
 function escapeHtml(text) {
@@ -810,13 +818,18 @@ function sanitizeHtmlFragment(html) {
 }
 
 function renderPrList(prs) {
-  if (!prs.length) {
+  console.log("renderPrList called with", prs.length, "PRs");
+  if (!prs || !prs.length) {
     els.prList.innerHTML = '<div class="empty">No pull requests found.</div>';
     return;
   }
 
   els.prList.innerHTML = "";
   prs.forEach((pr) => {
+    if (!pr || !pr.number) {
+      console.warn("Invalid PR:", pr);
+      return;
+    }
     const item = document.createElement("button");
     item.type = "button";
     item.className = "pr-item";
@@ -825,8 +838,8 @@ function renderPrList(prs) {
       <div class="state-pill" data-state="${pr.merged_at ? "merged" : pr.state}">
         #${pr.number} · ${pr.merged_at ? "merged" : pr.state}
       </div>
-      <h3>${pr.title}</h3>
-      <p>${pr.user.login} · updated ${new Date(pr.updated_at).toLocaleString()}</p>
+      <h3>${escapeHtml(pr.title || "Untitled")}</h3>
+      <p>${escapeHtml(pr.user?.login || "unknown")} · updated ${new Date(pr.updated_at || Date.now()).toLocaleString()}</p>
     `;
     item.addEventListener("click", () => selectPr(pr));
     if (state.active && state.active.number === pr.number) {
@@ -834,11 +847,14 @@ function renderPrList(prs) {
     }
     els.prList.appendChild(item);
   });
+  console.log("Rendered", prs.length, "PR items");
 }
 
 function filterPrs() {
-  const needle = els.search.value.trim().toLowerCase();
-  const stateFilter = els.stateFilter.value;
+  const needle = els.search?.value.trim().toLowerCase() || "";
+  const stateFilter = els.stateFilter?.value || "all";
+
+  console.log("Filtering PRs. Total:", state.prs.length, "Filter:", stateFilter, "Search:", needle);
 
   state.filtered = state.prs.filter((pr) => {
     const matchesState =
@@ -854,6 +870,7 @@ function filterPrs() {
     return matchesState && matchesNeedle;
   });
 
+  console.log("Filtered PRs:", state.filtered.length);
   renderPrList(state.filtered);
 
   if (!state.active && state.filtered.length) {
@@ -864,23 +881,32 @@ function filterPrs() {
 async function loadPrs() {
   try {
     setStatus("Loading pull requests...");
+    els.prList.innerHTML = '<div class="empty">Loading...</div>';
     const token = els.token.value.trim();
+    console.log("Loading PRs with token:", token ? "***" : "none");
     const prs = await ghFetch("pulls", {
       token,
       query: {
         per_page: 30,
         state: "all",
         sort: "updated",
-        direction: "asc",
+        direction: "desc",
       },
     });
+    console.log("Loaded PRs:", prs.length);
     state.prs = prs;
-    filterPrs();
-    setStatus("Pull requests loaded", "success");
+    if (prs.length === 0) {
+      els.prList.innerHTML = '<div class="empty">No pull requests found.</div>';
+      setStatus("No pull requests found", "info");
+    } else {
+      filterPrs();
+      setStatus(`Loaded ${prs.length} pull request${prs.length === 1 ? '' : 's'}`, "success");
+    }
   } catch (error) {
-    console.error(error);
+    console.error("Error loading PRs:", error);
     setStatus("Failed to load pull requests", "alert");
-    els.prList.innerHTML = `<div class="empty">${error.message}</div>`;
+    const errorMsg = error.message || "Unknown error";
+    els.prList.innerHTML = `<div class="empty">Error: ${escapeHtml(errorMsg)}<br><small>Check console for details</small></div>`;
   }
 }
 
