@@ -15,10 +15,10 @@ const els = {
   prLink: document.getElementById("prLink"),
   diffLink: document.getElementById("diffLink"),
   messages: document.getElementById("qodoMessages"),
-  diffTitle: document.getElementById("diffTitle"),
   diffTotals: document.getElementById("diffTotals"),
   diffFiles: document.getElementById("diffFiles"),
   diffViewer: document.getElementById("diffViewer"),
+  fileFilterInput: document.getElementById("fileFilterInput"),
   tabs: document.querySelectorAll(".tab"),
   tabPanels: document.querySelectorAll(".tab-panel"),
 };
@@ -257,7 +257,7 @@ function renderSplitDiff(patch) {
         rightLine = Number(match[2]) - 1;
       }
       rows.push(
-        `<tr class="diff-row hunk"><td colspan="2">${escapeHtml(line)}</td></tr>`,
+        `<tr class="diff-row hunk"><td colspan="2"><span class="code">${escapeHtml(line)}</span></td></tr>`,
       );
       return;
     }
@@ -498,7 +498,6 @@ function summarizePr(pr) {
   els.prLink.href = pr.html_url;
   els.diffLink.href = `${pr.html_url}/files`;
   els.prLinks.hidden = false;
-  els.diffTitle.textContent = pr.title;
 }
 
 function renderMessages(messages) {
@@ -598,7 +597,11 @@ function normalizeEntry(entry, kind) {
 function renderDiffTotals(files) {
   const additions = files.reduce((sum, file) => sum + (file.additions || 0), 0);
   const deletions = files.reduce((sum, file) => sum + (file.deletions || 0), 0);
-  els.diffTotals.textContent = `${files.length} file${files.length === 1 ? "" : "s"} · +${additions} / -${deletions}`;
+  els.diffTotals.textContent = `${files.length} file${files.length === 1 ? "" : "s"} changed`;
+  const statsEl = document.getElementById('filesChangedStats');
+  if (statsEl) {
+    statsEl.textContent = `+${additions} -${deletions}`;
+  }
 }
 
 function buildFileTree(files) {
@@ -626,18 +629,27 @@ function buildFileTree(files) {
 
 function renderFileNode(nodeName, nodeData, depth = 0) {
   const isFile = !!nodeData.__isFile;
-  const indent = depth * 20;
+  const indent = depth * 16;
   if (isFile && nodeData.__file) {
     const file = nodeData.__file;
     const status = file.status;
+    // GitHub-style icons: green plus for added, red square for modified/deleted
+    let statusIcon = '';
+    if (status === 'added') {
+      statusIcon = '<span class="file-status-icon file-status-added" aria-label="Added">+</span>';
+    } else if (status === 'removed') {
+      statusIcon = '<span class="file-status-icon file-status-removed" aria-label="Removed">−</span>';
+    } else {
+      statusIcon = '<span class="file-status-icon file-status-modified" aria-label="Modified">M</span>';
+    }
+    
     return `
       <button class="diff-file-btn file" style="--indent:${indent}px" data-filename="${file.filename}">
         <span class="file-label">
-          <span class="file-icon" aria-hidden="true">▸</span>
+          ${statusIcon}
           <span class="filename">${escapeHtml(file.filename)}</span>
         </span>
-        <span class="stats">
-          ${status}
+        <span class="file-stats">
           <span class="diff-chip add">+${file.additions}</span>
           <span class="diff-chip del">-${file.deletions}</span>
         </span>
@@ -660,7 +672,7 @@ function renderFileNode(nodeName, nodeData, depth = 0) {
   `;
 }
 
-function renderDiffFiles(files) {
+function renderDiffFiles(files, filter = '') {
   if (!files.length) {
     els.diffFiles.innerHTML = '<div class="empty">No file changes found.</div>';
     els.diffViewer.innerHTML = '<div class="empty">Nothing to preview.</div>';
@@ -668,7 +680,12 @@ function renderDiffFiles(files) {
     return;
   }
 
-  const tree = buildFileTree(files);
+  // Filter files if search term provided
+  const filteredFiles = filter
+    ? files.filter(file => file.filename.toLowerCase().includes(filter.toLowerCase()))
+    : files;
+
+  const tree = buildFileTree(filteredFiles);
   els.diffFiles.innerHTML = Object.entries(tree)
     .map(([name, node]) => renderFileNode(name, node))
     .join("");
@@ -762,43 +779,48 @@ function renderDiffViewer(file) {
     return;
   }
 
-  const statusMap = {
-    modified: "Modified",
-    added: "Added",
-    removed: "Removed",
-    renamed: "Renamed",
-  };
-  const statusLabel = statusMap[file.status] ?? file.status;
   const patch =
     file.patch && file.patch.trim().length
       ? renderSplitDiff(file.patch)
       : '<div class="empty">Binary file or patch unavailable.</div>';
-  const viewLink = file.blob_url
-    ? `<a class="diff-action" href="${file.blob_url}" target="_blank" rel="noopener">View file</a>`
-    : "";
-  const rawLink = file.raw_url
-    ? `<a class="diff-action" href="${file.raw_url}" target="_blank" rel="noopener">Raw</a>`
-    : "";
 
+  // GitHub-style collapsible file block
+  const fileSize = file.additions + file.deletions;
   els.diffViewer.innerHTML = `
-    <div class="diff-file-header">
-      <div class="diff-file-meta">
-        <span class="diff-file-path">${escapeHtml(file.filename)}</span>
-        <span class="diff-file-status">${statusLabel}</span>
-        <span class="diff-file-totals">
-          <span class="add">+${file.additions}</span>
-          <span class="del">-${file.deletions}</span>
-        </span>
+    <div class="file-diff-block">
+      <div class="file-diff-header">
+        <button class="file-diff-toggle" aria-expanded="true">
+          <svg class="file-diff-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M12.78 6.22a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06 0L3.22 7.28a.75.75 0 011.06-1.06L8 9.94l3.72-3.72a.75.75 0 011.06 0z"></path>
+          </svg>
+        </button>
+        <div class="file-diff-title">
+          <span class="file-diff-name">${escapeHtml(file.filename)}</span>
+          <span class="file-diff-badge">${fileSize} ${fileSize === 1 ? 'change' : 'changes'}</span>
+        </div>
       </div>
-      <div class="diff-file-actions">
-        ${viewLink}
-        ${rawLink}
+      <div class="file-diff-content">
+        <div class="diff-scroll">
+          ${patch}
+        </div>
       </div>
-    </div>
-    <div class="diff-scroll">
-      ${patch}
     </div>
   `;
+  
+  // Make it collapsible
+  const toggle = els.diffViewer.querySelector('.file-diff-toggle');
+  const content = els.diffViewer.querySelector('.file-diff-content');
+  if (toggle && content) {
+    toggle.addEventListener('click', () => {
+      const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+      toggle.setAttribute('aria-expanded', String(!isExpanded));
+      content.style.display = isExpanded ? 'none' : 'block';
+      const icon = toggle.querySelector('.file-diff-icon');
+      if (icon) {
+        icon.style.transform = isExpanded ? 'rotate(-90deg)' : 'rotate(0deg)';
+      }
+    });
+  }
   
   // Highlight code in diff cells
   requestAnimationFrame(() => {
@@ -826,7 +848,8 @@ async function loadDiff(pr) {
     });
     state.diffFiles = files;
     state.activeDiffFile = files[0]?.filename ?? null;
-    renderDiffFiles(files);
+    const filter = els.fileFilterInput?.value.trim() || '';
+    renderDiffFiles(files, filter);
     if (state.activeDiffFile) {
       selectDiffFile(state.activeDiffFile);
     }
@@ -889,6 +912,16 @@ async function selectPr(pr) {
 });
 
 els.token.addEventListener("change", () => loadPrs());
+
+// File filter functionality
+if (els.fileFilterInput) {
+  els.fileFilterInput.addEventListener("input", (e) => {
+    const filter = e.target.value.trim();
+    if (state.diffFiles.length > 0) {
+      renderDiffFiles(state.diffFiles, filter);
+    }
+  });
+}
 
 els.tabs.forEach((tab) =>
   tab.addEventListener("click", () => {

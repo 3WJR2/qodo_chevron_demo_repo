@@ -74,7 +74,7 @@
             Qodo feedback
           </button>
           <button class="tab" data-target="diffPanel" role="tab" aria-selected="false">
-            Embedded diff
+            Files Changed
           </button>
         </div>
         <div class="tab-panels">
@@ -86,19 +86,21 @@
             </div>
           </div>
           <div id="diffPanel" class="tab-panel" role="tabpanel" aria-hidden="true">
-            <div class="panel subpanel" aria-live="polite">
-              <div class="diff-header">
-                <div>
-                  <p class="meta">File diff</p>
-                  <h3 id="diffTitle">Select a pull request</h3>
+            <div class="files-changed-panel" aria-live="polite">
+              <div class="files-changed-header">
+                <div class="files-changed-summary">
+                  <span id="diffTotals">0 files changed</span>
+                  <span class="files-changed-stats" id="filesChangedStats">+0 -0</span>
                 </div>
-                <div class="diff-meta" id="diffTotals">0 files · 0 changes</div>
               </div>
-              <div class="diff-layout dual">
-                <div class="diff-files" id="diffFiles">
-                  <div class="empty">Choose a pull request to load its diff.</div>
+              <div class="files-changed-layout">
+                <div class="files-changed-sidebar">
+                  <input type="search" id="fileFilterInput" class="file-filter-input" placeholder="Filter changed files" />
+                  <div class="diff-files" id="diffFiles">
+                    <div class="empty">Choose a pull request to load its diff.</div>
+                  </div>
                 </div>
-                <div class="diff-viewer" id="diffViewer">
+                <div class="files-changed-content" id="diffViewer">
                   <div class="empty">Pick a file to preview the diff.</div>
                 </div>
               </div>

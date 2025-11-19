@@ -371,6 +371,79 @@ footer {
   text-align: right;
 }
 
+/* Files Changed Panel - GitHub-style layout */
+.files-changed-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--panel);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.files-changed-header {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.files-changed-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.files-changed-stats {
+  font-weight: 600;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.files-changed-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 500px;
+}
+
+.files-changed-sidebar {
+  border-right: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.file-filter-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: rgba(2, 8, 23, 0.4);
+  border: none;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  color: var(--text);
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.file-filter-input:focus {
+  background: rgba(2, 8, 23, 0.6);
+}
+
+.file-filter-input::placeholder {
+  color: var(--muted);
+}
+
+.files-changed-content {
+  background: var(--bg);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 .diff-layout {
   margin-top: 1.25rem;
   display: grid;
@@ -384,36 +457,44 @@ footer {
 }
 
 .diff-files {
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 1rem;
-  padding: 0.75rem;
-  background: rgba(15, 23, 42, 0.4);
-  max-height: 60vh;
-  overflow: auto;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.5rem 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0;
 }
 
 .diff-file-btn {
   border: none;
-  background: rgba(2, 8, 23, 0.3);
+  background: transparent;
   color: var(--text);
-  padding: 0.5rem 0.6rem;
-  border-radius: 0.6rem;
+  padding: 0.35rem 0.75rem;
+  padding-left: calc(0.75rem + var(--indent, 0));
   text-align: left;
   font: inherit;
   cursor: pointer;
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  transition: border-color 0.2s ease, background 0.2s ease;
-  border: 1px solid transparent;
-  margin-left: var(--indent, 0);
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  transition: background 0.15s ease;
+  border: none;
+  width: 100%;
+  font-size: 0.875rem;
+}
+
+.diff-file-btn:hover {
+  background: rgba(56, 189, 248, 0.1);
+}
+
+.diff-file-btn.active {
+  background: rgba(56, 189, 248, 0.15);
+  font-weight: 600;
 }
 .diff-dir {
-  margin: 0.15rem 0;
-  padding-left: var(--indent, 0);
+  margin: 0;
 }
 
 .diff-dir summary {
@@ -421,10 +502,16 @@ footer {
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
   color: var(--text);
-  padding: 0.35rem 0.5rem;
-  border-radius: 0.6rem;
+  padding: 0.35rem 0.75rem;
+  padding-left: calc(0.75rem + var(--indent, 0));
+  font-size: 0.875rem;
+  transition: background 0.15s ease;
+}
+
+.diff-dir summary:hover {
+  background: rgba(56, 189, 248, 0.05);
 }
 
 .diff-dir summary::-webkit-details-marker {
@@ -438,44 +525,66 @@ footer {
 .dir-icon {
   transition: transform 0.2s ease;
   color: var(--muted);
+  font-size: 0.75rem;
+  width: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .diff-file-btn .file-label {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
 }
 
-.diff-file-btn .file-icon {
-  color: var(--muted);
-  transition: transform 0.2s ease;
+.file-status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 
-.diff-file-btn:hover {
-  border-color: rgba(56, 189, 248, 0.4);
+.file-status-added {
+  background: #238636;
+  color: white;
 }
 
-.diff-file-btn.active {
-  border-color: var(--accent);
-  background: rgba(2, 132, 199, 0.2);
+.file-status-removed {
+  background: #da3633;
+  color: white;
 }
 
-.diff-file-btn.active .file-icon {
-  transform: rotate(90deg);
-  color: var(--accent);
+.file-status-modified {
+  background: #9e6a03;
+  color: white;
 }
 
 .diff-file-btn .filename {
-  font-weight: 600;
-  font-size: 0.95rem;
+  font-weight: 400;
+  font-size: 0.875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.diff-file-btn .stats {
-  font-size: 0.8rem;
-  color: var(--muted);
+.diff-file-btn.active .filename {
+  font-weight: 600;
+}
+
+.diff-file-btn .file-stats {
   display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  font-size: 0.75rem;
 }
 
 .diff-chip {
@@ -500,15 +609,89 @@ footer {
   gap: 0.75rem;
 }
 
-.diff-viewer {
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 1rem;
-  background: rgba(2, 8, 23, 0.6);
-  padding: 1rem;
-  min-height: 320px;
+.diff-viewer,
+.files-changed-content {
+  border: none;
+  border-radius: 0;
+  background: var(--bg);
+  padding: 0;
+  min-height: 500px;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0;
+}
+
+/* GitHub-style file diff block */
+.file-diff-block {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.file-diff-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(15, 23, 42, 0.3);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.file-diff-header:hover {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.file-diff-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.file-diff-icon {
+  transition: transform 0.2s ease;
+  color: var(--muted);
+}
+
+.file-diff-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.file-diff-name {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-diff-badge {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 12px;
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.file-diff-actions {
+  display: none;
+}
+
+.file-diff-content {
+  background: var(--bg);
 }
 
 .diff-viewer header {
@@ -812,56 +995,94 @@ footer {
 .diff-split {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 0.75rem;
-  font-size: 0.85rem;
-  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 0.75rem;
+  margin: 0;
+  font-size: 12px;
+  font-family: "SFMono-Regular", "Consolas", "Liberation Mono", "Menlo", monospace;
+  border: none;
+  border-radius: 0;
   overflow: hidden;
+  background: var(--bg);
+  outline: none;
 }
 
 .diff-row.hunk td {
   border: none;
-  padding: 0.4rem 0.6rem;
-  background: rgba(2, 6, 23, 0.8);
+  padding: 0;
+  background: rgba(15, 23, 42, 0.5);
   color: #fcd34d;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 24px;
+  height: 24px;
+}
+
+.diff-row.hunk td {
+  padding: 0;
+}
+
+.diff-row.hunk td .code {
+  padding: 0 10px 0 16px;
+  display: block;
+  line-height: 24px;
+  height: 24px;
 }
 
 .diff-cell {
-  border: 1px solid rgba(148, 163, 184, 0.15);
-  padding: 0.2rem 0.5rem 0.2rem 0.2rem;
+  border: none;
+  border-right: 1px solid rgba(148, 163, 184, 0.1);
+  padding: 0;
   vertical-align: top;
   position: relative;
   min-width: 50%;
+  line-height: 1.5;
+  font-size: 12px;
+  outline: none;
+}
+
+.diff-row {
+  height: 24px;
 }
 
 .diff-cell.add {
-  background: rgba(16, 185, 129, 0.12);
+  background: rgba(16, 185, 129, 0.15);
 }
 
 .diff-cell.del {
-  background: rgba(248, 113, 113, 0.12);
+  background: rgba(248, 113, 113, 0.15);
 }
 
 .diff-cell.ctx {
-  background: rgba(2, 6, 23, 0.6);
+  background: var(--bg);
 }
 
 .diff-cell.blank {
-  background: rgba(2, 6, 23, 0.4);
+  background: rgba(15, 23, 42, 0.3);
+  border-right-color: rgba(148, 163, 184, 0.2);
 }
 
 .diff-cell .line-no {
   display: inline-block;
-  width: 2.5rem;
-  color: rgba(148, 163, 184, 0.7);
+  width: 50px;
+  color: rgba(148, 163, 184, 0.5);
   text-align: right;
-  margin-right: 0.5rem;
+  padding: 0 10px 0 16px;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  line-height: 24px;
 }
 
 .diff-cell .code {
-  white-space: pre-wrap;
+  white-space: pre;
   display: inline-block;
+  padding: 0 10px;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  font-size: 12px;
+  line-height: 24px;
+  min-height: 24px;
+  outline: none;
+  border: none;
 }
 
 .gh-markdown table {
@@ -921,9 +1142,18 @@ footer {
   border: 1px solid rgba(148, 163, 184, 0.2) !important;
 }
 
-.message-body .hljs,
-.diff-viewer .hljs {
+.message-body .hljs {
   margin: 0.5rem 0;
+}
+
+.diff-viewer .hljs,
+.diff-split .hljs,
+.diff-cell .hljs {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
 }
 
 pre code.hljs {
@@ -998,5 +1228,15 @@ pre code.hljs {
 
   .diff-viewer-dual {
     grid-template-columns: 1fr;
+  }
+
+  .files-changed-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .files-changed-sidebar {
+    border-right: none;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    max-height: 300px;
   }
 }
