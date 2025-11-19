@@ -419,6 +419,171 @@ function enhanceTables(html) {
   return template.innerHTML;
 }
 
+function attachButtonHandlers(card) {
+  // Handle all buttons in the card
+  const buttons = card.querySelectorAll("button");
+  buttons.forEach((button) => {
+    const buttonText = button.textContent.toLowerCase().trim();
+    const buttonClass = button.className.toLowerCase();
+    const dataAction = button.getAttribute("data-action");
+    
+    // Remove any existing onclick handlers to prevent conflicts
+    button.removeAttribute("onclick");
+    
+    // Handle "More" button - typically expands/collapses content
+    if (buttonText.includes("more") || buttonClass.includes("more") || dataAction === "more") {
+      button.addEventListener("click", (e) => {
+        e.preventDefault();
+        handleMoreButton(button);
+      });
+    }
+    
+    // Handle "Update" button
+    else if (buttonText.includes("update") || buttonClass.includes("update") || dataAction === "update") {
+      button.addEventListener("click", (e) => {
+        e.preventDefault();
+        handleUpdateButton(button);
+      });
+    }
+    
+    // Handle generic buttons with data-action
+    else if (dataAction) {
+      button.addEventListener("click", (e) => {
+        e.preventDefault();
+        handleGenericButton(button, dataAction);
+      });
+    }
+    
+    // Handle buttons with onclick attribute (preserved from HTML)
+    else if (button.hasAttribute("onclick")) {
+      // The onclick will be preserved, but we can also add our handler
+      const originalOnclick = button.getAttribute("onclick");
+      button.addEventListener("click", (e) => {
+        // Execute original onclick if it's safe
+        try {
+          if (originalOnclick) {
+            // Create a function from the onclick string in a safe way
+            const func = new Function("event", originalOnclick);
+            func(e);
+          }
+        } catch (err) {
+          console.warn("Error executing button onclick:", err);
+        }
+      });
+    }
+    
+    // Default: make button clickable and log for debugging
+    else {
+      button.addEventListener("click", (e) => {
+        e.preventDefault();
+        console.log("Button clicked:", buttonText, button);
+        // You can add default behavior here
+      });
+    }
+  });
+  
+  // Handle input elements (checkboxes, etc.)
+  const inputs = card.querySelectorAll("input[type='checkbox'], input[type='radio']");
+  inputs.forEach((input) => {
+    input.addEventListener("change", (e) => {
+      handleInputChange(input, e);
+    });
+  });
+}
+
+function handleMoreButton(button) {
+  // Find associated content to expand/collapse
+  const card = button.closest(".message-card");
+  if (!card) return;
+  
+  // Look for hidden content or next sibling
+  let target = button.nextElementSibling;
+  
+  // If no next sibling, look for data-target
+  const targetId = button.getAttribute("data-target");
+  if (targetId) {
+    target = card.querySelector(`#${targetId}`) || card.querySelector(`.${targetId}`);
+  }
+  
+  // Toggle visibility
+  if (target) {
+    const isHidden = target.style.display === "none" || target.classList.contains("hidden");
+    if (isHidden) {
+      target.style.display = "";
+      target.classList.remove("hidden");
+      button.textContent = button.textContent.replace("Show", "Hide").replace("More", "Less");
+    } else {
+      target.style.display = "none";
+      target.classList.add("hidden");
+      button.textContent = button.textContent.replace("Hide", "Show").replace("Less", "More");
+    }
+  } else {
+    // Default: toggle a class on the button itself
+    button.classList.toggle("active");
+    console.log("More button clicked - no target found");
+  }
+}
+
+function handleUpdateButton(button) {
+  const card = button.closest(".message-card");
+  if (!card) return;
+  
+  // Find associated form or data to update
+  const form = card.querySelector("form");
+  const dataTarget = button.getAttribute("data-target");
+  
+  if (form) {
+    // Handle form submission
+    const formData = new FormData(form);
+    console.log("Update button clicked with form data:", Object.fromEntries(formData));
+    // You can add actual update logic here
+  } else if (dataTarget) {
+    // Handle data-target update
+    const target = card.querySelector(`#${dataTarget}`) || card.querySelector(`.${dataTarget}`);
+    if (target) {
+      console.log("Update button clicked for target:", dataTarget);
+      // You can add actual update logic here
+    }
+  } else {
+    console.log("Update button clicked");
+    // Default update behavior
+    button.textContent = "Updating...";
+    button.disabled = true;
+    
+    // Simulate update
+    setTimeout(() => {
+      button.textContent = "Updated";
+      button.disabled = false;
+      setTimeout(() => {
+        button.textContent = button.getAttribute("data-original-text") || "Update";
+      }, 2000);
+    }, 1000);
+  }
+}
+
+function handleGenericButton(button, action) {
+  console.log("Generic button clicked with action:", action);
+  const card = button.closest(".message-card");
+  
+  // Handle different actions
+  switch (action) {
+    case "expand":
+    case "collapse":
+      handleMoreButton(button);
+      break;
+    case "submit":
+      handleUpdateButton(button);
+      break;
+    default:
+      console.log("Unhandled button action:", action);
+  }
+}
+
+function handleInputChange(input, event) {
+  console.log("Input changed:", input.type, input.checked || input.value);
+  // You can add input change handlers here
+}
+
 const ALLOWED_TAGS = new Set([
   "p",
   "strong",
@@ -451,6 +616,8 @@ const ALLOWED_TAGS = new Set([
   "h5",
   "h6",
   "hr",
+  "button",
+  "input",
 ]);
 
 const ALLOWED_ATTRS = {
@@ -463,6 +630,8 @@ const ALLOWED_ATTRS = {
   div: ["class"],
   summary: [],
   details: [],
+  button: ["type", "class", "id", "data-action", "data-target", "onclick"],
+  input: ["type", "class", "id", "value", "placeholder", "checked"],
 };
 
 function sanitizeHtmlFragment(html) {
@@ -483,7 +652,10 @@ function sanitizeHtmlFragment(html) {
         }
         const allowed = ALLOWED_ATTRS[tag] ?? [];
         [...child.attributes].forEach((attr) => {
-          if (!allowed.includes(attr.name)) {
+          // Preserve data-* attributes for buttons and inputs
+          if (attr.name.startsWith("data-") && (tag === "button" || tag === "input" || tag === "div" || tag === "span")) {
+            // Keep data attributes - they're useful for interactivity
+          } else if (!allowed.includes(attr.name)) {
             child.removeAttribute(attr.name);
           }
         });
@@ -725,6 +897,9 @@ function renderMessages(messages) {
         ${link}
       `;
       els.messages.appendChild(card);
+      
+      // Make buttons interactive
+      attachButtonHandlers(card);
       
       // Highlight code blocks in this card after DOM is ready
       // Use requestAnimationFrame + setTimeout to ensure DOM is fully updated
