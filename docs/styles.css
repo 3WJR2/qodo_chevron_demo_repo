@@ -906,6 +906,25 @@ footer {
   color: var(--accent);
 }
 
+.chip.impact {
+  font-weight: 600;
+}
+
+.chip.impact-high {
+  background: rgba(248, 113, 113, 0.9) !important;
+  color: white !important;
+}
+
+.chip.impact-medium {
+  background: rgba(250, 204, 21, 0.9) !important;
+  color: white !important;
+}
+
+.chip.impact-low {
+  background: rgba(34, 197, 94, 0.9) !important;
+  color: white !important;
+}
+
 .message-link {
   display: inline-flex;
   align-items: center;

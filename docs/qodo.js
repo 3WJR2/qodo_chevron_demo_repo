@@ -532,6 +532,55 @@ function renderMessages(messages) {
       const link = msg.html_url
         ? `<a class="message-link" href="${msg.html_url}" target="_blank" rel="noopener">Jump to GitHub</a>`
         : "";
+      
+      // Extract impact level from message body
+      const bodyText = (msg.body || msg.body_html || "").toLowerCase();
+      let impactLevel = null;
+      
+      // Check for impact in text patterns
+      if (bodyText.includes("impact: high") || bodyText.includes("high impact") || bodyText.match(/impact[\s:]+high/i)) {
+        impactLevel = "high";
+      } else if (bodyText.includes("impact: medium") || bodyText.includes("medium impact") || bodyText.match(/impact[\s:]+medium/i)) {
+        impactLevel = "medium";
+      } else if (bodyText.includes("impact: low") || bodyText.includes("low impact") || bodyText.match(/impact[\s:]+low/i)) {
+        impactLevel = "low";
+      }
+      
+      // Also check HTML tables for impact column
+      if (!impactLevel && msg.body_html) {
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = msg.body_html;
+        const tables = tempDiv.querySelectorAll("table");
+        for (const table of tables) {
+          const headers = Array.from(table.querySelectorAll("th, td")).map(cell => cell.textContent.toLowerCase().trim());
+          const impactIndex = headers.findIndex(h => h.includes("impact"));
+          if (impactIndex >= 0) {
+            const rows = table.querySelectorAll("tr");
+            for (const row of rows) {
+              const cells = Array.from(row.querySelectorAll("td"));
+              if (cells[impactIndex]) {
+                const impactValue = cells[impactIndex].textContent.toLowerCase().trim();
+                if (impactValue === "high") {
+                  impactLevel = "high";
+                  break;
+                } else if (impactValue === "medium") {
+                  impactLevel = "medium";
+                  break;
+                } else if (impactValue === "low") {
+                  impactLevel = "low";
+                  break;
+                }
+              }
+            }
+            if (impactLevel) break;
+          }
+        }
+      }
+      
+      const impactChip = impactLevel
+        ? `<div class="chip impact impact-${impactLevel}">Impact: ${impactLevel.charAt(0).toUpperCase() + impactLevel.slice(1)}</div>`
+        : "";
+      
       card.innerHTML = `
         <header class="message-header">
           <div class="message-header-left">
@@ -540,6 +589,7 @@ function renderMessages(messages) {
               ${label}
               ${pathLabel}
             </div>
+            ${impactChip}
           </div>
           <div class="message-meta">
             <span>@${msg.author}</span>
