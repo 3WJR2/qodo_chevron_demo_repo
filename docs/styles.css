@@ -326,6 +326,8 @@ footer {
   text-transform: capitalize;
   background: rgba(148, 163, 184, 0.15);
   color: var(--muted);
+  width: fit-content;
+  align-self: flex-start;
 }
 
 .state-pill[data-state="open"] {
