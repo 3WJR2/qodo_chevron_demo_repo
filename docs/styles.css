@@ -601,7 +601,6 @@ footer {
   flex-direction: column;
   gap: 0.5rem;
   padding: 1rem;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
   background: rgba(14, 15, 17, 0.3);
 }
 
