@@ -23,6 +23,7 @@ const els = {
   prPanelToggle: document.getElementById("prPanelToggle"),
   prDetail: document.querySelector(".pr-detail"),
   filtersToggle: document.getElementById("filtersToggle"),
+  prPanelResizeHandle: document.getElementById("prPanelResizeHandle"),
 };
 
 // Load saved token from localStorage on page load
@@ -1506,6 +1507,58 @@ if (els.filtersToggle && els.prDetail) {
     const isCollapsed = els.prDetail.classList.contains("filters-collapsed");
     els.prDetail.classList.toggle("filters-collapsed", !isCollapsed);
     els.filtersToggle.setAttribute("aria-expanded", String(!isCollapsed));
+  });
+}
+
+// PR Panel resize functionality
+const PR_PANEL_WIDTH_KEY = 'qodo_pr_panel_width';
+const MIN_PANEL_WIDTH = 220;
+const MAX_PANEL_WIDTH = 600;
+
+// Load saved width from localStorage
+if (els.prDetail) {
+  const savedWidth = localStorage.getItem(PR_PANEL_WIDTH_KEY);
+  if (savedWidth) {
+    const width = parseInt(savedWidth, 10);
+    if (width >= MIN_PANEL_WIDTH && width <= MAX_PANEL_WIDTH) {
+      els.prDetail.style.setProperty('--pr-panel-width', `${width}px`);
+    }
+  }
+}
+
+if (els.prPanelResizeHandle && els.prDetail) {
+  let isResizing = false;
+  let startX = 0;
+  let startWidth = 0;
+
+  els.prPanelResizeHandle.addEventListener('mousedown', (e) => {
+    isResizing = true;
+    startX = e.clientX;
+    const currentWidth = parseInt(getComputedStyle(els.prDetail).getPropertyValue('--pr-panel-width') || '320', 10);
+    startWidth = currentWidth;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+    
+    const diff = startX - e.clientX; // Inverted because we're resizing from the right
+    const newWidth = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, startWidth + diff));
+    els.prDetail.style.setProperty('--pr-panel-width', `${newWidth}px`);
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isResizing) {
+      isResizing = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      
+      // Save width to localStorage
+      const currentWidth = parseInt(getComputedStyle(els.prDetail).getPropertyValue('--pr-panel-width') || '320', 10);
+      localStorage.setItem(PR_PANEL_WIDTH_KEY, currentWidth.toString());
+    }
   });
 }
 

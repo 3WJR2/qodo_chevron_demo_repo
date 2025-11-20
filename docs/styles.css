@@ -346,7 +346,7 @@ footer {
 .pr-detail {
   min-height: 0;
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: var(--pr-panel-width, 320px) 1fr;
   grid-template-rows: auto 1fr;
   gap: 0;
   flex: 1;
@@ -413,6 +413,43 @@ footer {
   border-right: 1px solid rgba(148, 163, 184, 0.2);
   position: relative;
   min-height: 0;
+  width: 100%;
+}
+
+.pr-panel-resize-handle {
+  position: absolute;
+  right: -4px;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  z-index: 20;
+  background: transparent;
+  transition: background 0.2s ease;
+}
+
+.pr-panel-resize-handle:hover {
+  background: rgba(121, 104, 250, 0.3);
+}
+
+.pr-panel-resize-handle:active {
+  background: rgba(121, 104, 250, 0.5);
+}
+
+.pr-panel-resize-handle::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(148, 163, 184, 0.3);
+  transform: translateX(-50%);
+  transition: background 0.2s ease;
+}
+
+.pr-panel-resize-handle:hover::after {
+  background: rgba(121, 104, 250, 0.6);
 }
 
 .pr-panel-content {
@@ -454,6 +491,10 @@ footer {
 
 .pr-detail.pr-panel-collapsed {
   grid-template-columns: 0 1fr;
+}
+
+.pr-detail.pr-panel-collapsed .pr-panel-resize-handle {
+  display: none;
 }
 
 .pr-panel-toggle {
