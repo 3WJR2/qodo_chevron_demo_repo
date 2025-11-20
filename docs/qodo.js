@@ -677,15 +677,46 @@ async function generateMoreSuggestions(button, card) {
     button.style.background = "rgba(34, 197, 94, 0.2)";
     button.style.color = "white";
     
-    // Reload messages after a delay to show new suggestions
-    setTimeout(async () => {
-      console.log("[generateMoreSuggestions] Reloading PR to show new suggestions");
-      await selectPr(pr);
-      button.textContent = originalText;
-      button.disabled = false;
-      button.style.background = "";
-      button.style.color = "";
-    }, 3000);
+    // Poll for new comments - the bot might take time to respond
+    console.log("[generateMoreSuggestions] Starting to poll for new comments...");
+    let attempts = 0;
+    const maxAttempts = 10; // Poll for up to 30 seconds (10 attempts * 3 seconds)
+    const pollInterval = 3000; // 3 seconds
+    
+    const pollForNewComments = async () => {
+      attempts++;
+      console.log(`[generateMoreSuggestions] Polling attempt ${attempts}/${maxAttempts}`);
+      
+      try {
+        // Reload messages to check for new comments
+        await selectPr(pr);
+        
+        // Check if we got new messages (this is a simple check - in production you'd track message IDs)
+        const currentMessages = els.messages.querySelectorAll(".message-card");
+        console.log(`[generateMoreSuggestions] Found ${currentMessages.length} message cards after reload`);
+        
+        // If we've tried enough times or found new messages, stop polling
+        if (attempts >= maxAttempts) {
+          console.log("[generateMoreSuggestions] Stopped polling - max attempts reached");
+          button.textContent = originalText;
+          button.disabled = false;
+          button.style.background = "";
+          button.style.color = "";
+        } else {
+          // Continue polling
+          setTimeout(pollForNewComments, pollInterval);
+        }
+      } catch (error) {
+        console.error("[generateMoreSuggestions] Error polling for comments:", error);
+        button.textContent = originalText;
+        button.disabled = false;
+        button.style.background = "";
+        button.style.color = "";
+      }
+    };
+    
+    // Start polling after initial delay
+    setTimeout(pollForNewComments, pollInterval);
   } catch (error) {
     console.error("[generateMoreSuggestions] Error:", error);
     button.textContent = "Error - Try again";
@@ -844,14 +875,38 @@ async function handleUpdateButton(button) {
       button.style.background = "rgba(34, 197, 94, 0.2)";
       button.style.color = "white";
       
-      // Reload messages after a delay
-      setTimeout(async () => {
-        await selectPr(pr);
-        button.textContent = originalText;
-        button.disabled = false;
-        button.style.background = "";
-        button.style.color = "";
-      }, 3000);
+      // Poll for new comments - the bot might take time to respond
+      console.log("[handleUpdateButton] Starting to poll for new comments...");
+      let attempts = 0;
+      const maxAttempts = 10; // Poll for up to 30 seconds
+      const pollInterval = 3000; // 3 seconds
+      
+      const pollForNewComments = async () => {
+        attempts++;
+        console.log(`[handleUpdateButton] Polling attempt ${attempts}/${maxAttempts}`);
+        
+        try {
+          await selectPr(pr);
+          
+          if (attempts >= maxAttempts) {
+            console.log("[handleUpdateButton] Stopped polling - max attempts reached");
+            button.textContent = originalText;
+            button.disabled = false;
+            button.style.background = "";
+            button.style.color = "";
+          } else {
+            setTimeout(pollForNewComments, pollInterval);
+          }
+        } catch (error) {
+          console.error("[handleUpdateButton] Error polling for comments:", error);
+          button.textContent = originalText;
+          button.disabled = false;
+          button.style.background = "";
+          button.style.color = "";
+        }
+      };
+      
+      setTimeout(pollForNewComments, pollInterval);
     }
   } catch (error) {
     console.error("[handleUpdateButton] Error:", error);
@@ -1307,8 +1362,15 @@ function renderMessages(messages) {
 
 function isQodoEntry(entry) {
   const author = (entry.user?.login || "").toLowerCase();
-  const body = (entry.body || entry.body_text || "").toLowerCase();
-  return author.includes("qodo") || body.includes("qodo");
+  const body = (entry.body || entry.body_text || entry.body_html || "").toLowerCase();
+  // Check for Qodo bot in author name or Qodo mentions in body
+  // Also check for common bot patterns like "qodo-merge-pro[bot]" or "qodo-ai[bot]"
+  const isQodoAuthor = author.includes("qodo") || author.includes("qodo-merge-pro") || author.includes("qodo-ai");
+  const hasQodoContent = body.includes("qodo") || body.includes("pr code suggestions") || body.includes("code suggestions");
+  
+  console.log(`[isQodoEntry] Checking entry: author="${author}", hasQodoAuthor=${isQodoAuthor}, hasQodoContent=${hasQodoContent}`);
+  
+  return isQodoAuthor || hasQodoContent;
 }
 
 function normalizeEntry(entry, kind) {
@@ -1424,7 +1486,11 @@ function renderFileNode(nodeName, nodeData, depth = 0, isLast = false, parentPat
     <details class="diff-dir" open>
       <summary style="--indent:${indent}px">
         <span class="file-tree-lines">${hierarchyLines}</span>
-        <span class="dir-icon" aria-hidden="true">▸</span>
+        <span class="dir-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M1.75 1A1.75 1.75 0 000 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0016 13.25v-8.5A1.75 1.75 0 0014.25 3H7.5a.25.25 0 01-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75z"></path>
+          </svg>
+        </span>
         ${escapeHtml(nodeName)}
       </summary>
       ${childrenHtml}
@@ -1700,12 +1766,115 @@ els.tabs.forEach((tab) =>
   }),
 );
 
-// PR Panel toggle functionality
+// PR Panel toggle functionality - click to collapse/expand, drag to resize height
+const PR_PANEL_HEIGHT_KEY = 'qodo_pr_panel_height';
+const PR_PANEL_TOGGLE_TOP_KEY = 'qodo_pr_panel_toggle_top';
+
+// Load saved height from localStorage
+if (els.prDetail && els.prPanelToggle) {
+  const savedHeight = localStorage.getItem(PR_PANEL_HEIGHT_KEY);
+  const savedToggleTop = localStorage.getItem(PR_PANEL_TOGGLE_TOP_KEY);
+  if (savedHeight) {
+    els.prDetail.style.setProperty('--pr-panel-height', savedHeight);
+  }
+  if (savedToggleTop) {
+    els.prDetail.style.setProperty('--pr-panel-toggle-top', savedToggleTop);
+  }
+}
+
 if (els.prPanelToggle && els.prDetail) {
-  els.prPanelToggle.addEventListener("click", () => {
-    const isCollapsed = els.prDetail.classList.contains("pr-panel-collapsed");
-    els.prDetail.classList.toggle("pr-panel-collapsed", !isCollapsed);
-    els.prPanelToggle.setAttribute("aria-expanded", String(isCollapsed));
+  let isDragging = false;
+  let startY = 0;
+  let startHeight = 0;
+  let startToggleTop = 0;
+  let clickStartTime = 0;
+  let clickStartY = 0;
+  
+  // Click to collapse/expand
+  els.prPanelToggle.addEventListener("mousedown", (e) => {
+    clickStartTime = Date.now();
+    clickStartY = e.clientY;
+    startY = e.clientY;
+    
+    // Get current height and toggle position
+    const wrapper = els.prDetail.querySelector(".pr-panel-wrapper");
+    if (wrapper) {
+      const computedStyle = getComputedStyle(els.prDetail);
+      const currentHeight = computedStyle.getPropertyValue('--pr-panel-height') || 'auto';
+      const currentToggleTop = computedStyle.getPropertyValue('--pr-panel-toggle-top') || '50%';
+      
+      if (currentHeight !== 'auto') {
+        startHeight = parseInt(currentHeight, 10);
+      } else {
+        startHeight = wrapper.offsetHeight;
+      }
+      
+      if (currentToggleTop !== '50%') {
+        startToggleTop = parseFloat(currentToggleTop);
+      } else {
+        startToggleTop = 50;
+      }
+    }
+  });
+  
+  // Handle drag
+  document.addEventListener("mousemove", (e) => {
+    if (!isDragging && els.prPanelToggle.matches(":active")) {
+      // Check if this is a drag (mouse moved more than 5px)
+      const moveDistance = Math.abs(e.clientY - clickStartY);
+      const timeElapsed = Date.now() - clickStartTime;
+      
+      if (moveDistance > 5 || timeElapsed > 200) {
+        // This is a drag, not a click
+        isDragging = true;
+        els.prPanelToggle.classList.add("dragging");
+        document.body.style.cursor = "ns-resize";
+        document.body.style.userSelect = "none";
+        e.preventDefault();
+      }
+    }
+    
+    if (isDragging) {
+      const wrapper = els.prDetail.querySelector(".pr-panel-wrapper");
+      if (wrapper) {
+        const deltaY = startY - e.clientY; // Inverted: dragging up (negative deltaY) increases height
+        const newHeight = Math.max(200, Math.min(window.innerHeight - 100, startHeight + deltaY));
+        
+        // Calculate new toggle position based on the ratio of movement
+        // The toggle should move proportionally with the height change
+        const heightRatio = newHeight / startHeight;
+        const newToggleTop = (startToggleTop / 100) * heightRatio * 100;
+        
+        els.prDetail.style.setProperty('--pr-panel-height', `${newHeight}px`);
+        els.prDetail.style.setProperty('--pr-panel-toggle-top', `${Math.max(10, Math.min(90, newToggleTop))}%`);
+      }
+    }
+  });
+  
+  document.addEventListener("mouseup", () => {
+    if (isDragging) {
+      isDragging = false;
+      els.prPanelToggle.classList.remove("dragging");
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      
+      // Save height and toggle position
+      const computedStyle = getComputedStyle(els.prDetail);
+      const currentHeight = computedStyle.getPropertyValue('--pr-panel-height');
+      const currentToggleTop = computedStyle.getPropertyValue('--pr-panel-toggle-top');
+      
+      if (currentHeight && currentHeight !== 'auto') {
+        localStorage.setItem(PR_PANEL_HEIGHT_KEY, currentHeight);
+      }
+      if (currentToggleTop && currentToggleTop !== '50%') {
+        localStorage.setItem(PR_PANEL_TOGGLE_TOP_KEY, currentToggleTop);
+      }
+    } else {
+      // This was a click, not a drag - toggle collapse/expand
+      const isCollapsed = els.prDetail.classList.contains("pr-panel-collapsed");
+      els.prDetail.classList.toggle("pr-panel-collapsed", !isCollapsed);
+      els.prPanelToggle.setAttribute("aria-expanded", String(isCollapsed));
+    }
   });
 }
 

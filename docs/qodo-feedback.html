@@ -49,10 +49,15 @@
         </button>
         <div class="pr-detail-content">
           <div class="detail-header">
-            <div class="state-pill" id="prState" data-state="idle">Select a PR</div>
-            <h2 id="prTitle">No pull request selected</h2>
-            <div class="detail-meta" id="prMeta">
-              Use the list on the left to load Qodo feedback for a pull request.
+            <div class="detail-header-content">
+              <div class="state-pill" id="prState" data-state="idle">Select a PR</div>
+              <h2 id="prTitle">No pull request selected</h2>
+              <div class="detail-meta" id="prMeta">
+                Use the list on the left to load Qodo feedback for a pull request.
+              </div>
+            </div>
+            <div class="detail-header-actions" id="prLinks" hidden>
+              <a id="prLink" class="button-link" target="_blank" rel="noopener">View on GitHub</a>
             </div>
           </div>
           <div class="tabs-wrapper">
@@ -63,9 +68,6 @@
               <button class="tab" data-target="diffPanel" role="tab" aria-selected="false">
                 Files Changed
               </button>
-            </div>
-            <div class="tabs-actions" id="prLinks" hidden>
-              <a id="prLink" class="button-link" target="_blank" rel="noopener">View on GitHub</a>
             </div>
           </div>
           <div class="tab-panels">
