@@ -202,7 +202,7 @@ function setStatus(message, tone = "info") {
 }
 
 async function ghFetch(path, options = {}) {
-  const { token, query = {}, mediaType } = options;
+  const { token, query = {}, mediaType, method = "GET", body } = options;
   const url = new URL(`${API_BASE}/${path}`);
   Object.entries(query).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
@@ -211,21 +211,45 @@ async function ghFetch(path, options = {}) {
   });
   const headers = {
     Accept: mediaType ?? "application/vnd.github+json",
+    "Content-Type": "application/json",
   };
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
-  console.log("Fetching:", url.toString());
-  const response = await fetch(url.toString(), { headers });
-  console.log("Response status:", response.status, response.statusText);
+  
+  const fetchOptions = {
+    method,
+    headers,
+  };
+  
+  if (body && (method === "POST" || method === "PATCH" || method === "PUT")) {
+    fetchOptions.body = typeof body === "string" ? body : JSON.stringify(body);
+  }
+  
+  console.log(`[ghFetch] ${method} ${url.toString()}`);
+  if (body) {
+    console.log("[ghFetch] Body:", typeof body === "string" ? body : JSON.stringify(body));
+  }
+  
+  const response = await fetch(url.toString(), fetchOptions);
+  console.log("[ghFetch] Response status:", response.status, response.statusText);
+  
   if (!response.ok) {
     const text = await response.text();
-    console.error("API Error:", response.status, text);
+    console.error("[ghFetch] API Error:", response.status, text);
     throw new Error(`${response.status}: ${text.substring(0, 200)}`);
   }
-  const data = await response.json();
-  console.log("API Response:", Array.isArray(data) ? `${data.length} items` : "object");
-  return data;
+  
+  // Handle empty responses (204 No Content, etc.)
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    const data = await response.json();
+    console.log("[ghFetch] API Response:", Array.isArray(data) ? `${data.length} items` : "object");
+    return data;
+  } else {
+    // Return empty object for non-JSON responses
+    return {};
+  }
 }
 
 function escapeHtml(text) {
@@ -438,43 +462,60 @@ function enhanceTables(html) {
 function attachButtonHandlers(card) {
   // Handle all buttons in the card
   const buttons = card.querySelectorAll("button");
-  buttons.forEach((button) => {
-    const buttonText = button.textContent.toLowerCase().trim();
-    const buttonClass = button.className.toLowerCase();
-    const dataAction = button.getAttribute("data-action");
+  console.log(`[attachButtonHandlers] Found ${buttons.length} buttons in card`);
+  
+  buttons.forEach((button, index) => {
+    // Remove any existing event listeners by cloning the button
+    const newButton = button.cloneNode(true);
+    button.parentNode.replaceChild(newButton, button);
+    const btn = newButton;
+    
+    const buttonText = btn.textContent.toLowerCase().trim();
+    const buttonClass = btn.className.toLowerCase();
+    const dataAction = btn.getAttribute("data-action");
+    
+    console.log(`[attachButtonHandlers] Button ${index}: text="${buttonText}", class="${buttonClass}", data-action="${dataAction}"`);
     
     // Remove any existing onclick handlers to prevent conflicts
-    button.removeAttribute("onclick");
+    btn.removeAttribute("onclick");
     
-    // Handle "More" button - typically expands/collapses content
+    // Handle "More" button - typically expands/collapses content or generates more
     if (buttonText.includes("more") || buttonClass.includes("more") || dataAction === "more") {
-      button.addEventListener("click", (e) => {
+      console.log(`[attachButtonHandlers] Attaching More button handler to button ${index}`);
+      btn.addEventListener("click", (e) => {
         e.preventDefault();
-        handleMoreButton(button);
+        e.stopPropagation();
+        console.log("[More Button] Clicked!");
+        handleMoreButton(btn);
       });
     }
     
     // Handle "Update" button
     else if (buttonText.includes("update") || buttonClass.includes("update") || dataAction === "update") {
-      button.addEventListener("click", (e) => {
+      console.log(`[attachButtonHandlers] Attaching Update button handler to button ${index}`);
+      btn.addEventListener("click", (e) => {
         e.preventDefault();
-        handleUpdateButton(button);
+        e.stopPropagation();
+        console.log("[Update Button] Clicked!");
+        handleUpdateButton(btn);
       });
     }
     
     // Handle generic buttons with data-action
     else if (dataAction) {
-      button.addEventListener("click", (e) => {
+      console.log(`[attachButtonHandlers] Attaching generic handler for action: ${dataAction}`);
+      btn.addEventListener("click", (e) => {
         e.preventDefault();
-        handleGenericButton(button, dataAction);
+        e.stopPropagation();
+        handleGenericButton(btn, dataAction);
       });
     }
     
     // Handle buttons with onclick attribute (preserved from HTML)
-    else if (button.hasAttribute("onclick")) {
+    else if (btn.hasAttribute("onclick")) {
       // The onclick will be preserved, but we can also add our handler
-      const originalOnclick = button.getAttribute("onclick");
-      button.addEventListener("click", (e) => {
+      const originalOnclick = btn.getAttribute("onclick");
+      btn.addEventListener("click", (e) => {
         // Execute original onclick if it's safe
         try {
           if (originalOnclick) {
@@ -490,9 +531,11 @@ function attachButtonHandlers(card) {
     
     // Default: make button clickable and log for debugging
     else {
-      button.addEventListener("click", (e) => {
+      console.log(`[attachButtonHandlers] Attaching default handler to button ${index}`);
+      btn.addEventListener("click", (e) => {
         e.preventDefault();
-        console.log("Button clicked:", buttonText, button);
+        e.stopPropagation();
+        console.log("[Default Button] Clicked:", buttonText, btn);
         // You can add default behavior here
       });
     }
@@ -508,17 +551,29 @@ function attachButtonHandlers(card) {
 }
 
 async function handleMoreButton(button) {
+  console.log("[handleMoreButton] Called");
   const card = button.closest(".message-card");
-  if (!card) return;
+  if (!card) {
+    console.error("[handleMoreButton] No message card found");
+    return;
+  }
+  
+  console.log("[handleMoreButton] Card found:", card);
   
   // Check if this is a "More" button that should generate more suggestions
   const buttonText = button.textContent.toLowerCase().trim();
-  const isGenerateMore = buttonText.includes("more") && 
-                         (card.querySelector(".suggestions-table") || 
-                          card.querySelector(".suggestions-title"));
+  const hasSuggestionsTable = card.querySelector(".suggestions-table") !== null;
+  const hasSuggestionsTitle = card.querySelector(".suggestions-title") !== null;
+  const isGenerateMore = buttonText.includes("more") && (hasSuggestionsTable || hasSuggestionsTitle);
+  
+  console.log("[handleMoreButton] Button text:", buttonText);
+  console.log("[handleMoreButton] Has suggestions table:", hasSuggestionsTable);
+  console.log("[handleMoreButton] Has suggestions title:", hasSuggestionsTitle);
+  console.log("[handleMoreButton] Should generate more:", isGenerateMore);
   
   if (isGenerateMore) {
     // Generate more suggestions via Qodo API
+    console.log("[handleMoreButton] Calling generateMoreSuggestions");
     await generateMoreSuggestions(button, card);
     return;
   }
@@ -547,13 +602,16 @@ async function handleMoreButton(button) {
   } else {
     // Default: toggle a class on the button itself
     button.classList.toggle("active");
-    console.log("More button clicked - no target found");
+    console.log("[handleMoreButton] More button clicked - no target found");
   }
 }
 
 async function generateMoreSuggestions(button, card) {
+  console.log("[generateMoreSuggestions] Called");
+  
   if (!state.active) {
-    console.error("No active PR selected");
+    console.error("[generateMoreSuggestions] No active PR selected");
+    alert("Please select a pull request first");
     return;
   }
   
@@ -561,89 +619,60 @@ async function generateMoreSuggestions(button, card) {
   const messageId = card.dataset.messageId;
   const token = els.token.value.trim();
   
+  console.log("[generateMoreSuggestions] PR:", pr.number, "Message ID:", messageId, "Has token:", !!token);
+  
   // Disable button and show loading state
   const originalText = button.textContent;
   button.disabled = true;
   button.textContent = "Generating...";
   
   try {
-    // Call Qodo API to generate more suggestions
-    // You can configure this endpoint - for now using a GitHub API approach
-    // Option 1: Post a comment to trigger Qodo (if Qodo listens to comments)
-    // Option 2: Call Qodo API directly (if you have the endpoint)
+    // Use GitHub API to post a comment that triggers Qodo
+    // This assumes Qodo bot listens for specific comment patterns
+    console.log("[generateMoreSuggestions] Posting trigger comment to GitHub");
     
-    // For now, we'll use GitHub API to post a comment that triggers Qodo
-    // Replace this with your actual Qodo API endpoint
-    const qodoApiUrl = button.getAttribute("data-api-url") || 
-                       process.env.QODO_API_URL || 
-                       null;
-    
-    if (qodoApiUrl) {
-      // Direct Qodo API call
-      const response = await fetch(qodoApiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          pr_number: pr.number,
-          pr_url: pr.html_url,
-          message_id: messageId,
-          repo: REPO,
-          owner: OWNER,
-          action: "generate_more_suggestions",
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Qodo API error: ${response.status}`);
-      }
-      
-      const result = await response.json();
-      
-      // Update the UI with new suggestions
-      if (result.suggestions) {
-        updateSuggestionsTable(card, result.suggestions);
-      }
-    } else {
-      // Fallback: Use GitHub API to post a comment that triggers Qodo
-      // This assumes Qodo bot listens for specific comment patterns
-      const triggerComment = await ghFetch(`issues/${pr.number}/comments`, {
-        token,
-        method: "POST",
-        body: JSON.stringify({
-          body: "@qodo-merge-pro[bot] generate more suggestions",
-        }),
-      });
-      
-      // Show success message
-      button.textContent = "Requested!";
-      button.style.background = "rgba(34, 197, 94, 0.2)";
-      
-      // Reload messages after a delay to show new suggestions
-      setTimeout(async () => {
-        await selectPr(pr);
-      }, 3000);
+    if (!token) {
+      throw new Error("GitHub token is required. Please enter your token in the filters section.");
     }
+    
+    const triggerComment = await ghFetch(`issues/${pr.number}/comments`, {
+      token,
+      method: "POST",
+      body: {
+        body: "@qodo-merge-pro[bot] generate more suggestions",
+      },
+    });
+    
+    console.log("[generateMoreSuggestions] Comment posted successfully:", triggerComment);
+    
+    // Show success message
+    button.textContent = "Requested!";
+    button.style.background = "rgba(34, 197, 94, 0.2)";
+    button.style.color = "white";
+    
+    // Reload messages after a delay to show new suggestions
+    setTimeout(async () => {
+      console.log("[generateMoreSuggestions] Reloading PR to show new suggestions");
+      await selectPr(pr);
+      button.textContent = originalText;
+      button.disabled = false;
+      button.style.background = "";
+      button.style.color = "";
+    }, 3000);
   } catch (error) {
-    console.error("Error generating more suggestions:", error);
+    console.error("[generateMoreSuggestions] Error:", error);
     button.textContent = "Error - Try again";
     button.style.background = "rgba(248, 113, 113, 0.2)";
+    button.style.color = "white";
+    
+    alert(`Failed to generate more suggestions: ${error.message}`);
     
     setTimeout(() => {
       button.textContent = originalText;
       button.disabled = false;
       button.style.background = "";
-    }, 2000);
-  } finally {
-    // Re-enable button after a delay if not already handled
-    setTimeout(() => {
-      if (button.disabled && button.textContent === "Generating...") {
-        button.textContent = originalText;
-        button.disabled = false;
-      }
-    }, 10000);
+      button.style.color = "";
+    }, 3000);
   }
 }
 
@@ -677,40 +706,140 @@ function updateSuggestionsTable(card, newSuggestions) {
   attachButtonHandlers(card);
 }
 
-function handleUpdateButton(button) {
+async function handleUpdateButton(button) {
+  console.log("[handleUpdateButton] Called");
   const card = button.closest(".message-card");
-  if (!card) return;
+  if (!card) {
+    console.error("[handleUpdateButton] No message card found");
+    return;
+  }
+  
+  if (!state.active) {
+    console.error("[handleUpdateButton] No active PR selected");
+    alert("Please select a pull request first");
+    return;
+  }
+  
+  const pr = state.active;
+  const messageId = card.dataset.messageId;
+  const token = els.token.value.trim();
+  
+  console.log("[handleUpdateButton] PR:", pr.number, "Message ID:", messageId);
   
   // Find associated form or data to update
   const form = card.querySelector("form");
   const dataTarget = button.getAttribute("data-target");
   
-  if (form) {
-    // Handle form submission
-    const formData = new FormData(form);
-    console.log("Update button clicked with form data:", Object.fromEntries(formData));
-    // You can add actual update logic here
-  } else if (dataTarget) {
-    // Handle data-target update
-    const target = card.querySelector(`#${dataTarget}`) || card.querySelector(`.${dataTarget}`);
-    if (target) {
-      console.log("Update button clicked for target:", dataTarget);
-      // You can add actual update logic here
-    }
-  } else {
-    console.log("Update button clicked");
-    // Default update behavior
-    button.textContent = "Updating...";
-    button.disabled = true;
-    
-    // Simulate update
-    setTimeout(() => {
-      button.textContent = "Updated";
-      button.disabled = false;
+  // Disable button and show loading state
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = "Updating...";
+  
+  try {
+    if (form) {
+      // Handle form submission
+      const formData = new FormData(form);
+      console.log("[handleUpdateButton] Form data:", Object.fromEntries(formData));
+      
+      // Post form data as a comment to trigger update
+      if (!token) {
+        throw new Error("GitHub token is required. Please enter your token in the filters section.");
+      }
+      
+      const formDataObj = Object.fromEntries(formData);
+      const commentBody = `@qodo-merge-pro[bot] update suggestions\n\n${JSON.stringify(formDataObj, null, 2)}`;
+      
+      await ghFetch(`issues/${pr.number}/comments`, {
+        token,
+        method: "POST",
+        body: {
+          body: commentBody,
+        },
+      });
+      
+      button.textContent = "Updated!";
+      button.style.background = "rgba(34, 197, 94, 0.2)";
+      button.style.color = "white";
+      
       setTimeout(() => {
-        button.textContent = button.getAttribute("data-original-text") || "Update";
+        button.textContent = originalText;
+        button.disabled = false;
+        button.style.background = "";
+        button.style.color = "";
       }, 2000);
-    }, 1000);
+    } else if (dataTarget) {
+      // Handle data-target update
+      const target = card.querySelector(`#${dataTarget}`) || card.querySelector(`.${dataTarget}`);
+      if (target) {
+        console.log("[handleUpdateButton] Updating target:", dataTarget);
+        
+        // Post update request
+        if (!token) {
+          throw new Error("GitHub token is required. Please enter your token in the filters section.");
+        }
+        
+        await ghFetch(`issues/${pr.number}/comments`, {
+          token,
+          method: "POST",
+          body: {
+            body: `@qodo-merge-pro[bot] update suggestions for ${dataTarget}`,
+          },
+        });
+        
+        button.textContent = "Updated!";
+        button.style.background = "rgba(34, 197, 94, 0.2)";
+        button.style.color = "white";
+        
+        setTimeout(() => {
+          button.textContent = originalText;
+          button.disabled = false;
+          button.style.background = "";
+          button.style.color = "";
+        }, 2000);
+      }
+    } else {
+      // Default update behavior - trigger Qodo to regenerate suggestions
+      console.log("[handleUpdateButton] Default update - triggering Qodo");
+      
+      if (!token) {
+        throw new Error("GitHub token is required. Please enter your token in the filters section.");
+      }
+      
+      await ghFetch(`issues/${pr.number}/comments`, {
+        token,
+        method: "POST",
+        body: {
+          body: "@qodo-merge-pro[bot] update suggestions",
+        },
+      });
+      
+      button.textContent = "Updated!";
+      button.style.background = "rgba(34, 197, 94, 0.2)";
+      button.style.color = "white";
+      
+      // Reload messages after a delay
+      setTimeout(async () => {
+        await selectPr(pr);
+        button.textContent = originalText;
+        button.disabled = false;
+        button.style.background = "";
+        button.style.color = "";
+      }, 3000);
+    }
+  } catch (error) {
+    console.error("[handleUpdateButton] Error:", error);
+    button.textContent = "Error - Try again";
+    button.style.background = "rgba(248, 113, 113, 0.2)";
+    button.style.color = "white";
+    
+    alert(`Failed to update: ${error.message}`);
+    
+    setTimeout(() => {
+      button.textContent = originalText;
+      button.disabled = false;
+      button.style.background = "";
+      button.style.color = "";
+    }, 3000);
   }
 }
 
