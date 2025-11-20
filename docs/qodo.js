@@ -464,6 +464,11 @@ function attachButtonHandlers(card) {
   const buttons = card.querySelectorAll("button");
   console.log(`[attachButtonHandlers] Found ${buttons.length} buttons in card`);
   
+  if (buttons.length === 0) {
+    console.warn("[attachButtonHandlers] No buttons found in card!");
+    return;
+  }
+  
   buttons.forEach((button, index) => {
     // Remove any existing event listeners by cloning the button
     const newButton = button.cloneNode(true);
@@ -530,14 +535,36 @@ function attachButtonHandlers(card) {
     }
     
     // Default: make button clickable and log for debugging
+    // Also check if it might be a More/Update button by text content
     else {
       console.log(`[attachButtonHandlers] Attaching default handler to button ${index}`);
-      btn.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log("[Default Button] Clicked:", buttonText, btn);
-        // You can add default behavior here
-      });
+      
+      // Double-check: maybe the button text wasn't caught by the earlier checks
+      if (buttonText.includes("more") || buttonText.includes("generate")) {
+        console.log(`[attachButtonHandlers] Detected More button in default handler`);
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log("[Default More Button] Clicked!");
+          handleMoreButton(btn);
+        });
+      } else if (buttonText.includes("update") || buttonText.includes("refresh")) {
+        console.log(`[attachButtonHandlers] Detected Update button in default handler`);
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log("[Default Update Button] Clicked!");
+          handleUpdateButton(btn);
+        });
+      } else {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log("[Default Button] Clicked:", buttonText, btn);
+          // Show alert to help debug
+          alert(`Button clicked: "${buttonText}"\n\nIf this should be a More/Update button, check the console for details.`);
+        });
+      }
     }
   });
   
@@ -1205,8 +1232,60 @@ function renderMessages(messages) {
       
       els.messages.appendChild(card);
       
-      // Make buttons interactive
-      attachButtonHandlers(card);
+      // Add More and Update buttons if they don't exist and this is a suggestions message
+      if (isSuggestionsMessage) {
+        const messageBody = card.querySelector(".message-body");
+        if (messageBody) {
+          // Check if buttons already exist
+          const existingButtons = messageBody.querySelectorAll("button");
+          let hasMoreButton = false;
+          let hasUpdateButton = false;
+          
+          existingButtons.forEach(btn => {
+            const text = btn.textContent.toLowerCase().trim();
+            if (text.includes("more") || text.includes("generate")) hasMoreButton = true;
+            if (text.includes("update") || text.includes("refresh")) hasUpdateButton = true;
+          });
+          
+          // Create a button container if needed
+          let buttonContainer = messageBody.querySelector(".qodo-buttons-container");
+          if (!buttonContainer) {
+            buttonContainer = document.createElement("div");
+            buttonContainer.className = "qodo-buttons-container";
+            buttonContainer.style.cssText = "margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;";
+            messageBody.appendChild(buttonContainer);
+          }
+          
+          // Add More button if missing
+          if (!hasMoreButton) {
+            const moreBtn = document.createElement("button");
+            moreBtn.type = "button";
+            moreBtn.className = "qodo-action-button";
+            moreBtn.setAttribute("data-action", "more");
+            moreBtn.textContent = "More";
+            moreBtn.style.cssText = "padding: 0.5rem 1rem; background: rgba(121, 104, 250, 0.2); color: var(--accent); border: 1px solid rgba(121, 104, 250, 0.4); border-radius: 0.5rem; cursor: pointer; font-size: 0.9rem;";
+            buttonContainer.appendChild(moreBtn);
+            console.log("[renderMessages] Added More button");
+          }
+          
+          // Add Update button if missing
+          if (!hasUpdateButton) {
+            const updateBtn = document.createElement("button");
+            updateBtn.type = "button";
+            updateBtn.className = "qodo-action-button";
+            updateBtn.setAttribute("data-action", "update");
+            updateBtn.textContent = "Update";
+            updateBtn.style.cssText = "padding: 0.5rem 1rem; background: rgba(121, 104, 250, 0.2); color: var(--accent); border: 1px solid rgba(121, 104, 250, 0.4); border-radius: 0.5rem; cursor: pointer; font-size: 0.9rem;";
+            buttonContainer.appendChild(updateBtn);
+            console.log("[renderMessages] Added Update button");
+          }
+        }
+      }
+      
+      // Make buttons interactive - use setTimeout to ensure DOM is ready
+      setTimeout(() => {
+        attachButtonHandlers(card);
+      }, 0);
       
       // Highlight code blocks in this card after DOM is ready
       // Use requestAnimationFrame + setTimeout to ensure DOM is fully updated
