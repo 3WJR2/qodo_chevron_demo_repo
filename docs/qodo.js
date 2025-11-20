@@ -948,7 +948,7 @@ function renderMessages(messages) {
           ? "Review"
           : msg.kind === "review_comment"
             ? "Diff comment"
-            : "Issue comment";
+            : "Qodo Feedback";
       const pathLabel = msg.path
         ? `<span class="path">${escapeHtml(msg.path)}${msg.line ? `:${msg.line}` : ""}</span>`
         : "";

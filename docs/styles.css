@@ -351,6 +351,7 @@ footer {
   gap: 0;
   flex: 1;
   overflow: hidden;
+  position: relative;
 }
 
 .filters-wrapper {
@@ -499,7 +500,7 @@ footer {
 
 .pr-panel-toggle {
   position: absolute;
-  left: 100%;
+  left: var(--pr-panel-width, 320px);
   top: 50%;
   transform: translateY(-50%);
   z-index: 10;
@@ -523,10 +524,6 @@ footer {
   background: rgba(14, 15, 17, 1);
   border-color: rgba(148, 163, 184, 0.5);
   color: var(--accent);
-}
-
-.pr-detail.pr-panel-collapsed .pr-panel-wrapper {
-  position: relative;
 }
 
 .pr-detail.pr-panel-collapsed .pr-panel-toggle {
