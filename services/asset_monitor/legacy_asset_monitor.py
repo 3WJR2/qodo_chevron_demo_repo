@@ -9,7 +9,7 @@ Intentionally messy, “realistically bad” code:
 import time
 import random
 
-THRESHOLD_TEMP = 90
+THRESHOLD_TEMP = 88   # lowered threshold for pump-001
 THRESHOLD_PRESSURE = 120
 THRESHOLD_VIBRATION = 5.0
 
